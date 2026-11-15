@@ -157,7 +157,7 @@ void main() {
   float fog = 1.0 - exp(-uFog * uFog * vD * vD);
   gl_FragColor = vec4(0.0, 1.0, 0.0, uOpacity * (1.0 - fog) * (1.0 - vFade));
 }`;
-// wall boards / photos: "leave this alone" (blue = -1, no blending)
+// wall boards / photos: "leave this alone" (blue 1 with alpha 0, which the blended passes can never write; no blending)
 const markVert = /* glsl */ `
 #include <common>
 #include <logdepthbuf_pars_vertex>
@@ -171,7 +171,7 @@ const markFrag = /* glsl */ `
 #include <logdepthbuf_pars_fragment>
 void main() {
   #include <logdepthbuf_fragment>
-  gl_FragColor = vec4(0.0, 0.0, -1.0, 0.0);
+  gl_FragColor = vec4(0.0, 0.0, 1.0, 0.0);
 }`;
 
 /* ---------------- the last pass ---------------- */
@@ -214,7 +214,7 @@ void main() {
   vec2 uv = vUv, p = gl_FragCoord.xy / uScale;
   vec3 a = sceneAt(uv);
   vec4 B = texture2D(tB, uv);
-  if (B.b < -0.3) { gl_FragColor = vec4(srgb(clamp(texture2D(tA, uv).rgb, 0.0, 1.0)), 1.0); return; }  // a wall board
+  if (B.b > B.a + 0.5) { gl_FragColor = vec4(srgb(clamp(texture2D(tA, uv).rgb, 0.0, 1.0)), 1.0); return; }  // a wall board
   float mask = clamp(B.a, 0.0, 1.0);
   if (mask < 0.003) { gl_FragColor = vec4(a, 1.0); return; }                                           // not drawn (house only)
   float R = clamp(B.r / mask, 0.0, 1.0) * uHatch + ((uStyle == 7 || uStyle == 18) ? 0.5 * (1.0 - uHatch) : 0.0), G = clamp(B.g / mask, 0.0, 1.0), s = clamp(B.b / mask, 0.0, 1.0);
@@ -403,8 +403,10 @@ export function createArtPass(renderer, scene, camera) {
 
   /* ---------------- targets and the last pass ---------------- */
   const depthTexture = new THREE.DepthTexture(1, 1);
-  const rtA = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4, depthTexture });
-  const rtB = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4 });
+  // half-float targets keep the scene's highlights; browsers/GPUs that cannot render to them (e.g. some Safari) get 8-bit
+  const ext = renderer.extensions, type = ext.has("EXT_color_buffer_float") || ext.has("EXT_color_buffer_half_float") ? THREE.HalfFloatType : THREE.UnsignedByteType;
+  const rtA = new THREE.WebGLRenderTarget(1, 1, { type, samples: 4, depthTexture });
+  const rtB = new THREE.WebGLRenderTarget(1, 1, { type, samples: 4 });
   const post = new THREE.ShaderMaterial({
     vertexShader: postVert, fragmentShader: postFrag, depthTest: false, depthWrite: false, toneMapped: false,
     uniforms: {

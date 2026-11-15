@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { initTyper, initLab, F04_OPTIONS, reducedMotion } from "../shared/kit.js";
+import { initTyper, initLab, reducedMotion } from "../shared/kit.js";
 import { lakeHouse, SHAPES } from "./layouts.js";
 import { ART, createArtPass } from "./post.js";
 
@@ -1228,28 +1228,19 @@ function render() {
 }
 
 /* ================= options panel ================= */
+// decided (2026-11-15): these options are fixed; only lamps, art style and house colours stay switchable
+const FIXED = { h: "stack", p: "3", s: "forestPeaks", n: "summer", t: "night", x: "clear", w: "see", g: "sky", u: "off", v: "house", a: "crop", b: "exact", c: "scrub" };
+for (const k of ["a", "b", "c"]) html.dataset[k] = FIXED[k];
 initLab({
-  defaults: { l: "warm", y: "current", v: "all", u: "on", h: "L", p: "0", k: "drafting", s: "open", n: "summer", t: "day", x: "clear", w: "see", g: "plan", a: "crop", b: "exact", c: "scrub" },
+  defaults: { l: "warm", y: "current", k: "drafting" },
   groups: {
     l: { label: "Lamps (board lights, rooms at night)", options: Object.entries(LAMPS).map(([k, v]) => [k, v.label]) },
     y: { label: "Art style", options: Object.entries(ART).map(([k, v]) => [k, v.label]) },
-    v: { label: "Sketch applies to", options: [["all", "Whole scene"], ["house", "House only (surroundings as A1)"]] },
-    u: { label: "Sketch hatching", options: [["on", "On"], ["off", "Off (lines only, no strokes on the surfaces)"]] },
-    h: { label: "House shape", options: Object.entries(SHAPES).map(([k, v]) => [k, v.label]) },
-    p: { label: "Furnishing", options: [["0", "P1 Sparse (as before)"], ["1", "P2 Lived-in"], ["2", "P3 Cosy"], ["3", "P4 Full"]] },
     k: { label: "House colours", options: Object.entries(PALETTES).map(([k, v]) => [k, v.label]) },
-    s: { label: "Lake and surroundings", options: Object.entries(SURROUNDINGS).map(([k, v]) => [k, v.label]) },
-    n: { label: "Season", options: Object.entries(SEASONS).map(([k, v]) => [k, v.label]) },
-    t: { label: "Light (time of day)", options: Object.entries(LIGHTS).map(([k, v]) => [k, v.label]) },
-    x: { label: "Weather", options: Object.entries(WEATHER).map(([k, v]) => [k, v.label]) },
-    w: { label: "Walls", options: [["see", "See-through"], ["solid", "Solid"]] },
-    g: { label: "Ending", options: Object.entries(ENDINGS) },
-    a: F04_OPTIONS.a,
-    b: F04_OPTIONS.b,
-    c: F04_OPTIONS.c,
   },
   storageKey: "p1-lake3",
-  onChange: (s) => {
+  onChange: (picked) => {
+    const s = { ...FIXED, ...picked };
     LAMP = LAMPS[s.l] || LAMPS.warm;
     applyPalette(s.k, s.w); art.setStyle(s.y); art.setHatching(s.u !== "off");
     if ([s.h, s.g, s.s, s.t, s.x, s.n, s.p].join("|") !== buildKey) buildLayout(s.h, s.g, s.s, s.t, s.x, s.n, s.p);
