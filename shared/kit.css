@@ -1,0 +1,129 @@
+/* Shared mechanics only. Each prototype sets fonts/colours via:
+   --f04-surface (stage background for "behind"/"fade"), --f04-ink, --f04-gap (text width share). */
+
+@property --p { syntax: "<number>"; inherits: true; initial-value: 0; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+/* F03 caret */
+.typer-caret {
+  display: inline-block; width: 0.08em; height: 0.9em; margin-left: 0.06em;
+  background: currentColor; vertical-align: -0.08em;
+  animation: caret 1s steps(1) infinite;
+}
+@keyframes caret { 50% { opacity: 0; } }
+
+/* ---------- F04 ---------- */
+.f04 { position: relative; height: 270vh; --gap: var(--f04-gap, 44%); --gap-n: var(--f04-gap-n, .44); }
+.f04-stage {
+  position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden;
+  background: var(--f04-surface, #ddd); color: var(--f04-ink, #111);
+}
+.f04-text {
+  position: absolute; inset: 0 auto 0 0; width: var(--gap);
+  display: flex; flex-direction: column; justify-content: center;
+  padding: clamp(24px, 5vw, 80px);
+  z-index: 0;
+}
+.f04-media { position: absolute; inset: 0; margin: 0; z-index: 1; will-change: transform, clip-path; }
+.f04-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* C2: animate --p itself */
+html[data-c="trigger"] .f04 { transition: --p 1.4s cubic-bezier(.7, 0, .2, 1); }
+
+/* A1 resize: the whole photo scales down into the right-hand part */
+html[data-a="resize"] .f04-media {
+  transform-origin: 100% 50%;
+  transform: translateX(calc(var(--p) * -3vw)) scale(calc(1 - (var(--gap-n, .44) + .04) * var(--p)));
+}
+/* A2 crop: the frame narrows from the left, the photo itself stays put */
+html[data-a="crop"] .f04-media { clip-path: inset(0 0 0 calc(var(--p) * var(--gap))); }
+/* A3 slide: the photo slides right, partly off-screen */
+html[data-a="slide"] .f04-media { transform: translateX(calc(var(--p) * var(--gap))); }
+
+/* B1 photo colours */
+html[data-b="palette"] .f04-stage { background: var(--bg); color: var(--ink); }
+html[data-b="palette"] .f04-title { color: var(--accent); }
+/* B2 fade in after the photo has moved */
+html[data-b="fade"] .f04-text > * {
+  opacity: clamp(0, (var(--p) - .55) * 2.6, 1);
+  transform: translateY(calc((1 - clamp(0, (var(--p) - .55) * 2.6, 1)) * 28px));
+}
+/* B3 behind: nothing to do, the text simply sits under the photo */
+
+/* B4 exact photo: the space the photo leaves keeps its exact pixels, under a veil in the
+   photo's own colour; the title is cut out of the veil so the photo shows through it. */
+html[data-b="exact"] .f04-stage, html[data-b="letters"] .f04-stage { isolation: isolate; background: var(--bg); color: var(--ink); }
+html[data-b="exact"] .f04-stage::before {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background:
+    linear-gradient(color-mix(in srgb, var(--bg) calc(var(--p) * 84%), transparent), color-mix(in srgb, var(--bg) calc(var(--p) * 84%), transparent)),
+    var(--img) center / cover no-repeat;
+}
+html[data-b="exact"] .f04-title, html[data-b="letters"] .f04-title {
+  background: var(--img) center / cover no-repeat fixed;
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent; -webkit-text-fill-color: transparent;
+}
+/* thin outline in the photo's ink colour keeps photo-filled letters readable on light photos */
+html[data-b="exact"] .f04-title, html[data-b="letters"] .f04-title { -webkit-text-stroke: 1px color-mix(in srgb, var(--ink) 45%, transparent); }
+
+/* Alternate sides on wide screens: 1st project photo goes right, 2nd left, … */
+@media (min-width: 761px) {
+  .f04--flip .f04-text { inset: 0 0 0 auto; }
+  html[data-a="resize"] .f04--flip .f04-media { transform-origin: 0% 50%; transform: translateX(calc(var(--p) * 3vw)) scale(calc(1 - (var(--gap-n, .44) + .04) * var(--p))); }
+  html[data-a="crop"] .f04--flip .f04-media { clip-path: inset(0 calc(var(--p) * var(--gap)) 0 0); }
+  html[data-a="slide"] .f04--flip .f04-media { transform: translateX(calc(var(--p) * var(--gap) * -1)); }
+}
+
+/* ---------- E: space between two project photos ---------- */
+.f04-gap { position: relative; height: 42vh; overflow: hidden; display: none; }
+html[data-e="frame"] .f04-gap, html[data-e="blend"] .f04-gap, html[data-e="photos"] .f04-gap, html[data-e="swatches"] .f04-gap { display: block; }
+.gap-photos, .gap-swatches { display: none; }
+/* E1: the next project's colour, which also frames its photo */
+html[data-e="frame"] .f04-gap { background: var(--b-bg); }
+html[data-e="frame"] .f04-stage { background: var(--bg); }
+html[data-e="frame"] .f04-media, html[data-e="frame"][data-b="exact"] .f04-stage::before { inset: var(--frame, 5vh 3.5vw); }
+/* E2: colours of both photos fading into each other */
+html[data-e="blend"] .f04-gap { background: linear-gradient(var(--a-bg), color-mix(in srgb, var(--a-acc) 60%, var(--a-bg)) 28%, color-mix(in srgb, var(--a-acc) 50%, var(--b-acc)) 50%, color-mix(in srgb, var(--b-acc) 60%, var(--b-bg)) 72%, var(--b-bg)); }
+/* E3: both photos, heavily blurred, dissolving into each other */
+html[data-e="photos"] .gap-photos { display: block; position: absolute; inset: -60px; }
+.gap-photos span { position: absolute; inset: 0; background-size: cover; background-position: center; filter: blur(38px) saturate(1.15); }
+.gap-photos .ga { background-image: var(--a-img); background-position: center bottom; -webkit-mask-image: linear-gradient(#000 25%, transparent 75%); mask-image: linear-gradient(#000 25%, transparent 75%); }
+.gap-photos .gb { background-image: var(--b-img); background-position: center top; -webkit-mask-image: linear-gradient(transparent 25%, #000 75%); mask-image: linear-gradient(transparent 25%, #000 75%); }
+/* E4: material-board strip of the next project's colours */
+html[data-e="swatches"] .f04-gap { background: var(--f04-surface, #ddd); }
+html[data-e="swatches"] .gap-swatches { display: flex; position: absolute; inset: 9vh 8vw; gap: 0; }
+.gap-swatches .sw { flex: 1; background: var(--c); position: relative; }
+.gap-swatches .sw i { position: absolute; left: 10px; bottom: 8px; font: 500 12px/1 system-ui, sans-serif; font-style: normal; color: #fff; mix-blend-mode: difference; }
+
+/* Phones: text comes in below instead of beside */
+@media (max-width: 760px) {
+  .f04 { --gap: 52%; }
+  .f04-text { inset: auto 0 0 0; width: auto; height: var(--gap); justify-content: flex-start; padding: 20px 20px 28px; }
+  html[data-a="resize"] .f04-media { transform-origin: 50% 0; transform: scale(calc(1 - .56 * var(--p))); }
+  html[data-a="crop"] .f04-media { clip-path: inset(0 0 calc(var(--p) * var(--gap)) 0); }
+  html[data-a="slide"] .f04-media { transform: translateY(calc(var(--p) * var(--gap) * -1)); }
+}
+
+/* ---------- lab panel ---------- */
+.lab {
+  position: fixed; right: 16px; bottom: 16px; z-index: 100;
+  font: 13px/1.35 system-ui, sans-serif; color: #111;
+}
+.lab-toggle, .lab-body { background: #fff; border: 1px solid #0003; border-radius: 6px; box-shadow: 0 4px 18px #0002; }
+.lab-toggle { padding: 8px 12px; cursor: pointer; font: inherit; color: inherit; display: block; margin-left: auto; }
+.lab-body { margin-bottom: 8px; padding: 10px 12px; position: absolute; bottom: 100%; right: 0; width: 240px; max-height: calc(100vh - 90px); overflow: auto; }
+.lab fieldset { border: 0; margin: 0 0 8px; padding: 0; }
+.lab legend { font-weight: 600; padding: 0; margin-bottom: 2px; }
+.lab label { display: block; cursor: pointer; padding: 2px 0; }
+.lab-back { color: inherit; }
+.lab :focus-visible { outline: 2px solid #1a73e8; outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .typer-caret { animation: none; }
+  html[data-c="trigger"] .f04 { transition: none; }
+}

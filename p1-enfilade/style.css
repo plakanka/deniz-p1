@@ -1,0 +1,74 @@
+:root {
+  --fog: #A9B0B8;      /* the air in the rooms */
+  --mist: #C9CED3;     /* wall fill */
+  --chalk: #EEF0EE;    /* light text, paper */
+  --slate: #27313B;    /* drawing lines, ink */
+  --sodium: #E9B44C;   /* warm lamp light, the only accent */
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0; background: var(--fog); color: var(--slate);
+  font-family: "Archivo", system-ui, sans-serif; font-variation-settings: "wdth" 100;
+  font-size: 17px; line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--sodium); outline-offset: 3px; }
+
+#world { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; z-index: 0; opacity: 0; transition: opacity 1.6s ease; }
+#world.ready { opacity: 1; }
+#world.pointer { cursor: pointer; }
+.veil {
+  position: fixed; inset: 0; z-index: 1; pointer-events: none;
+  background:
+    radial-gradient(120% 90% at 50% 45%, transparent 55%, rgb(39 49 59 / .28) 100%),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='.09'/></svg>");
+}
+main, .bar { position: relative; z-index: 2; }
+main { pointer-events: none; }
+main a, main button { pointer-events: auto; }
+
+.bar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 5;
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 18px clamp(16px, 4vw, 48px); font-size: 14px;
+}
+.bar-name { text-decoration: none; font-weight: 600; }
+.bar nav { display: flex; gap: clamp(12px, 2.4vw, 28px); }
+.bar nav a { text-decoration: none; opacity: .75; }
+.bar nav a:hover { opacity: 1; text-decoration: underline; text-underline-offset: 4px; }
+
+.tag { display: inline-flex; align-items: center; gap: 10px; margin: 0 0 22px; font-size: 14px; }
+.tag span { border: 1px solid currentColor; padding: 1px 7px; font-variation-settings: "wdth" 75; font-weight: 500; }
+
+/* ---------- hero (the only HTML section on screen) ---------- */
+.hero { min-height: 100vh; padding: 18vh clamp(16px, 6vw, 96px) 14vh; display: flex; flex-direction: column; justify-content: flex-end; }
+.hero-name {
+  margin: 0; font-weight: 220; line-height: .86; letter-spacing: -.01em;
+  font-variation-settings: "wdth" 125; font-size: clamp(56px, 13.5vw, 230px);
+  color: var(--chalk); text-shadow: 0 1px 30px rgb(39 49 59 / .18);
+  display: flex; flex-direction: column;
+}
+.hero-name span:last-child { padding-left: .9em; }
+.hero-typer { margin: 28px 0 0; min-height: 1.3em; font-size: clamp(20px, 2.4vw, 32px); font-variation-settings: "wdth" 88; }
+.hint { margin: 6vh 0 0; font-size: 14px; opacity: .7; }
+
+/* ---------- wall stops: in the page for screen readers and scroll length, drawn in 3D ---------- */
+.ghost { min-height: 260vh; opacity: 0; padding: 20vh 10vw; }
+.ghost:focus-within { opacity: 1; }
+#contact { min-height: 200vh; }
+
+
+@media (max-width: 760px) {
+  body { font-size: 16px; }
+  .bar nav { gap: 12px; font-size: 13px; }
+}
+
+/* art styles (data-paper, set by main.js): on paper the light hero name turns to ink with a paper halo;
+   on dark paper (blueprint, blackboard) all page text turns light */
+html[data-paper="light"] .hero-name { color: var(--slate); text-shadow: 0 0 28px rgb(246 244 236 / .85); }
+html[data-paper="light"] .hero-typer, html[data-paper="light"] .hint { text-shadow: 0 0 14px rgb(246 244 236 / .9); }
+html[data-paper="dark"] body { color: var(--chalk); }
