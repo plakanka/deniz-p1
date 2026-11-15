@@ -14,11 +14,14 @@ body {
   font-family: "Archivo", system-ui, sans-serif; font-variation-settings: "wdth" 100;
   font-size: 17px; line-height: 1.55;
   -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
 }
+.lab-body { max-height: calc(100vh - 90px); max-height: calc(100dvh - 90px); }
 a { color: inherit; }
 :focus-visible { outline: 2px solid var(--sodium); outline-offset: 3px; }
 
-#world { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; z-index: 0; opacity: 0; transition: opacity 1.6s ease; }
+#world { position: fixed; inset: 0; width: 100%; height: 100%; display: block;   /* not 100vh: on iPhone that is taller than the visible screen */
+  z-index: 0; opacity: 0; transition: opacity 1.6s ease; }
 #world.ready { opacity: 1; }
 #world.pointer { cursor: pointer; }
 .veil {
@@ -45,7 +48,7 @@ main a, main button { pointer-events: auto; }
 .tag span { border: 1px solid currentColor; padding: 1px 7px; font-variation-settings: "wdth" 75; font-weight: 500; }
 
 /* ---------- hero (the only HTML section on screen) ---------- */
-.hero { min-height: 100vh; padding: 18vh clamp(16px, 6vw, 96px) 14vh; display: flex; flex-direction: column; justify-content: flex-end; }
+.hero { min-height: 100vh; min-height: 100svh; padding: 18vh clamp(16px, 6vw, 96px) 14vh; display: flex; flex-direction: column; justify-content: flex-end; }
 .hero-name {
   margin: 0; font-weight: 220; line-height: .86; letter-spacing: -.01em;
   font-variation-settings: "wdth" 125; font-size: clamp(56px, 13.5vw, 230px);
@@ -96,7 +99,7 @@ html.no-gl .hint { display: none; }
 .card {
   position: fixed; left: 12px; right: 12px; bottom: 62px; z-index: 4; max-height: 40vh;   /* above the Options button */ overflow: auto; overscroll-behavior: contain;
   padding: 18px 18px 14px; background: rgb(238 240 238 / .94); color: var(--slate); border-radius: 4px; box-shadow: 0 6px 28px rgb(11 16 32 / .35);
-  font-size: 14.5px; line-height: 1.45; opacity: 0; transform: translateY(16px); pointer-events: none;
+  max-height: 40dvh; font-size: 14.5px; line-height: 1.45; opacity: 0; transform: translateY(16px); pointer-events: none;
   transition: opacity .35s ease, transform .35s ease;
 }
 .card.on { opacity: 1; transform: none; pointer-events: auto; }
