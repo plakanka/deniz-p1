@@ -3,8 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Deniz Yılmaz, interior architect (P1 Enfilade)</title>
-<meta name="description" content="Prototype P1: walk through a line-drawn house; every section hangs on a wall inside it. Inspired by igloo.inc.">
+<title>Deniz Yılmaz, interior architect</title>
+<meta name="description" content="Walk through a house by a lake at night; Deniz Yılmaz's work, path and contact hang on its walls.">
+<meta name="theme-color" content="#0B1020">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Deniz Yılmaz, interior architect">
+<meta property="og:description" content="Walk through a house by a lake at night; the work hangs on its walls.">
+<meta property="og:image" content="https://plakanka.github.io/deniz-p1/p1-enfilade/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,200..700&display=swap" rel="stylesheet">
@@ -13,6 +22,7 @@
 <script type="importmap">{ "imports": { "three": "../vendor/three.module.min.js" } }</script>
 </head>
 <body>
+<div class="poster" aria-hidden="true"></div>
 <canvas id="world" aria-hidden="true"></canvas>
 <div class="veil" aria-hidden="true"></div>
 
@@ -53,6 +63,12 @@
 </main>
 
 <script src="../shared/content.js"></script>
-<script type="module" src="main.js"></script>
+<script type="module">
+  import "./page.js";
+  // the 3D house needs WebGL 2; without it (or if it fails to start) the sections are shown as a plain page over the still
+  const gl = (() => { try { return !!document.createElement("canvas").getContext("webgl2"); } catch { return false; } })();
+  const plain = () => document.documentElement.classList.add("no-gl");
+  if (gl) import("./main.js").catch((e) => { console.error(e); plain(); }); else plain();
+</script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { initTyper, initLab, reducedMotion } from "../shared/kit.js";
+import { initLab, reducedMotion } from "../shared/kit.js";
 import { lakeHouse, SHAPES } from "./layouts.js";
 import { ART, createArtPass } from "./post.js";
 
@@ -15,22 +15,7 @@ const lerp = (a, b, t) => a + (b - a) * t;
 const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const ss = (a, b, v) => { const t = clamp((v - a) / (b - a)); return t * t * (3 - 2 * t); };
 
-/* ================= HTML (screen readers + scroll length) ================= */
-$("#first").textContent = CV.first;
-$("#last").textContent = CV.last;
-$("#intro").textContent = CV.intro;
-$("#facts").innerHTML = CV.facts.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("");
-$("#work").innerHTML = CV.projects.map((p) => `
-  <section class="ghost" id="${p.id}" data-step="${p.id}" aria-labelledby="t-${p.id}">
-    <h2 id="t-${p.id}">${p.title}</h2><p>${p.kind}, ${p.year}. ${p.text}</p>
-    <p>Area ${p.area}. Location ${p.place}. Role: ${p.role}.</p>
-  </section>`).join("");
-$("#path-list").innerHTML = CV.path.map(([y, w, wh]) => `<li>${y}: ${w}, ${wh}</li>`).join("");
-$("#principles").innerHTML = CV.principles.map(([t, d]) => `<li><b>${t}.</b> ${d}</li>`).join("");
-$("#mail").textContent = CV.email;
-$("#mail").href = `mailto:${CV.email}`;
-$("#links").innerHTML = CV.links.map((l) => `<li><a href="${l.href}">${l.label}</a></li>`).join("");
-initTyper($("#typer"), CV.phrases);
+/* the HTML sections (screen readers + scroll length) are filled by page.js, which loads first */
 
 /* ================= endings ================= */
 const ENDINGS = {
@@ -84,7 +69,7 @@ scene.add(world);
 /* house colours: walls, drawing ink, floor, stairs/dock and the furniture materials.
    Lamps (warm glow) and plant leaves stay the same in every palette. */
 const PALETTES = {
-  drafting: { label: "K1 Drafting grey-blue (as before)", wallSee: 0xbcc3ca, wallSolid: 0xd9dbd8, ink: 0x27313b, floor: "#B9BFC6", grid: "rgba(39,49,59,.22)", glow: 0x3a4048, post: 0x6b5a48, step: 0xc4cad0,
+  drafting: { label: "K1 Drafting grey-blue", wallSee: 0xbcc3ca, wallSolid: 0xd9dbd8, ink: 0x27313b, floor: "#B9BFC6", grid: "rgba(39,49,59,.22)", glow: 0x3a4048, post: 0x6b5a48, step: 0xc4cad0,
     wood: 0xb08a62, fabric: 0x8c9aa6, white: 0xe6e6e1, dark: 0x3c4248, rug: 0xcdbfa6, books: [0x8c5a4a, 0x4f6e77, 0xc9a96e, 0x5f6b55, 0xa77f66] },
   concrete: { label: "K2 Concrete greys", wallSee: 0xbdbdbb, wallSolid: 0xd3d3d0, ink: 0x2b2b2b, floor: "#ABABA8", grid: "rgba(40,40,40,.22)", glow: 0x3c3c3b, post: 0x4a4a49, step: 0xc2c2bf,
     wood: 0x8e8d89, fabric: 0x6f7070, white: 0xe0e0dd, dark: 0x343434, rug: 0xbebebb, books: [0x5a5a5a, 0x7e7e7d, 0xa6a6a4, 0x474747, 0x929290] },
@@ -320,7 +305,7 @@ const LAMPS = {
   neutral: { label: "Q3 Neutral white", board: 0xfff4ea, room: 0xfff0e0, k: 0.75 },
   cool: { label: "Q4 Cool daylight", board: 0xe8f0ff, room: 0xe6eeff, k: 0.75 },
   dim: { label: "Q5 Soft and dim (neutral)", board: 0xfff4ea, room: 0xfff0e0, k: 0.35 },
-  off: { label: "Q6 Off (only the daylight)", board: 0xffffff, room: 0xfff0e0, k: 0 },
+  off: { label: "Q6 Off (room lights only)", board: 0xffffff, room: 0xfff0e0, k: 0 },
 };
 let LAMP = LAMPS.warm;
 function applyLamps(st) {
@@ -1172,8 +1157,17 @@ const cam = { pos: new THREE.Vector3(0.35, E, 4), yaw: 0, pitch: 0 };
 let mYaw = 0, mPitch = 0;
 const clock = new THREE.Clock();
 const tmp = new THREE.Vector3();
+// slow device: if frames stay slow (>45 ms, ~22 fps) for 3 s while visible, drop to 1 pixel per CSS pixel, once
+let slowFor = 0, lastT = 0;
+function watchSpeed(t) {
+  const dt = t - lastT; lastT = t;
+  if (renderer.getPixelRatio() <= 1 || document.hidden || dt > 0.5) return;
+  slowFor = dt > 0.045 ? slowFor + dt : 0;
+  if (slowFor > 3) { renderer.setPixelRatio(1); measure(); }
+}
 function render() {
   const t = clock.getElapsedTime();
+  watchSpeed(t);
   const target = pose(stepAtScroll(scrollY));
   const ease = reducedMotion ? 1 : 0.075;
   cam.pos.lerp(target.pos, ease);
@@ -1227,11 +1221,13 @@ for (const k of ["a", "b", "c"]) html.dataset[k] = FIXED[k];
 initLab({
   defaults: { l: "warm", y: "current", k: "drafting" },
   groups: {
-    l: { label: "Lamps (board lights, rooms at night)", options: Object.entries(LAMPS).map(([k, v]) => [k, v.label]) },
+    l: { label: "Lamps", options: Object.entries(LAMPS).map(([k, v]) => [k, v.label]) },
     y: { label: "Art style", options: Object.entries(ART).map(([k, v]) => [k, v.label]) },
     k: { label: "House colours", options: Object.entries(PALETTES).map(([k, v]) => [k, v.label]) },
   },
   storageKey: "p1-lake3",
+  title: "Options",
+  backHref: location.hostname.endsWith("github.io") ? null : "../index.html",   // the hosted copy has no prototype list
   onChange: (picked) => {
     const s = { ...FIXED, ...picked };
     LAMP = LAMPS[s.l] || LAMPS.warm;
@@ -1240,6 +1236,7 @@ initLab({
     else stations.forEach((st) => (st.img || !st.info.photo) && paintBoard(st));
     const d = LT.disc;                                   // the art styles shade the faces turned from the sun / moon
     art.apply(world, { bounds: L.bounds, sun: d ? new THREE.Vector3(d[0], d[1], -520) : new THREE.Vector3(-4, 12, 6), houseOnly: s.v === "house" });
+    html.dataset.night = LT.sun < 1 ? "1" : "0";        // page text turns light on the night sky
     html.dataset.paper = !art.on || s.v === "house" || LT.sun < 1 ? "none" : ART[s.y].dark ? "dark" : "light";   // page text on the sketch
     applyLamps();
     curveCache.clear();

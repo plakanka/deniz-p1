@@ -20,7 +20,7 @@ const LAYER = 2;
    wash: how far bright areas turn into paper, hk / lk / ok: strength of strokes / lines / outlines, sp: stroke spacing (m),
    dark: the paper is dark (page text turns light) */
 export const ART = {
-  current: { label: "A1 Current (as before)", id: 0 },
+  current: { label: "A1 Plain (no drawing)", id: 0 },
   sketch: { label: "A2 Architectural sketch (pen, construction lines, hatching)", id: 1, pat: 0, paper: "#F7F6F2", inkD: "#1E2024", inkL: "#ECEAE2", tint: 0.18, wash: 0.92, hk: 0.62, lk: 0.9, ok: 0.5, sp: 0.085 },
   watercolor: { label: "A3 Watercolour over pencil", id: 2, pat: 0, paper: "#F9F7F0", inkD: "#5A5C62", inkL: "#E4E2DA", tint: 0.9, wash: 0.85, hk: 0.18, lk: 0.55, ok: 0.3, sp: 0.1 },
   charcoal: { label: "A4 Charcoal", id: 3, pat: 2, paper: "#E8E3DA", inkD: "#151515", inkL: "#E8E3DA", tint: 0.06, wash: 0.9, hk: 0.75, lk: 0.85, ok: 0.65, sp: 0.22 },
@@ -300,6 +300,32 @@ void main() {
 const srgb3 = (hex) => { const n = parseInt(hex.slice(1), 16); return new THREE.Vector3((n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255); };
 const h1 = (i) => { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
 
+// try each render-target setup on a tiny target (with a depth texture, as pass A uses): draw, resolve, check for GL errors
+function pickTargets(renderer) {
+  const gl = renderer.getContext(), ext = renderer.extensions;
+  const fl = ext.has("EXT_color_buffer_float") || ext.has("EXT_color_buffer_half_float");
+  const tries = [[THREE.HalfFloatType, 4], [THREE.HalfFloatType, 0], [THREE.UnsignedByteType, 4], [THREE.UnsignedByteType, 0]].filter(([t]) => fl || t !== THREE.HalfFloatType);
+  const sc = new THREE.Scene(), cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  sc.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.MeshBasicMaterial()));
+  const prev = renderer.getRenderTarget();
+  for (const [type, samples] of tries) {
+    const rt = new THREE.WebGLRenderTarget(4, 4, { type, samples, depthTexture: new THREE.DepthTexture(4, 4) });
+    let ok = false;
+    try {
+      while (gl.getError() !== gl.NO_ERROR);
+      renderer.setRenderTarget(rt);
+      ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+      renderer.render(sc, cam);
+      renderer.setRenderTarget(null);
+      ok = ok && gl.getError() === gl.NO_ERROR;
+    } catch { ok = false; }
+    renderer.setRenderTarget(prev);
+    rt.depthTexture.dispose(); rt.dispose();
+    if (ok) return { type, samples };
+  }
+  return { type: THREE.UnsignedByteType, samples: 0 };
+}
+
 export function createArtPass(renderer, scene, camera) {
   let style = 0, S = null;
   const U = { uPat: { value: 0 }, uSun: { value: new THREE.Vector3(-4, 12, 6).normalize() }, uFog: { value: 0 }, uSp: { value: 0.085 } };
@@ -396,10 +422,12 @@ export function createArtPass(renderer, scene, camera) {
 
   /* ---------------- targets and the last pass ---------------- */
   const depthTexture = new THREE.DepthTexture(1, 1);
-  // half-float targets keep the scene's highlights; browsers/GPUs that cannot render to them (e.g. some Safari) get 8-bit
-  const ext = renderer.extensions, type = ext.has("EXT_color_buffer_float") || ext.has("EXT_color_buffer_half_float") ? THREE.HalfFloatType : THREE.UnsignedByteType;
-  const rtA = new THREE.WebGLRenderTarget(1, 1, { type, samples: 4, depthTexture });
-  const rtB = new THREE.WebGLRenderTarget(1, 1, { type, samples: 4 });
+  // half-float + 4x MSAA keeps the scene's highlights and smooth edges. Some browsers/GPUs (e.g. some Safari) can't render
+  // to half-float, or claim to and fail with MSAA, so each setup is tried for real and the first that works is used.
+  const { type, samples } = pickTargets(renderer);
+  console.info(`P1 art styles: ${type === THREE.HalfFloatType ? "half-float" : "8-bit"} targets, ${samples}x MSAA`);
+  const rtA = new THREE.WebGLRenderTarget(1, 1, { type, samples, depthTexture });
+  const rtB = new THREE.WebGLRenderTarget(1, 1, { type, samples });
   const post = new THREE.ShaderMaterial({
     vertexShader: postVert, fragmentShader: postFrag, depthTest: false, depthWrite: false, toneMapped: false,
     uniforms: {

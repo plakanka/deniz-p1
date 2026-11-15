@@ -105,7 +105,7 @@ export function initF04(root = document) {
 }
 
 /* ---------- Lab panel: switch F04 options live ---------- */
-export function initLab({ defaults = { a: "crop", b: "behind", c: "scrub", e: "frame" }, groups = F04_OPTIONS, storageKey = "f04-lab", backHref = "../index.html", onChange } = {}) {
+export function initLab({ defaults = { a: "crop", b: "behind", c: "scrub", e: "frame" }, groups = F04_OPTIONS, storageKey = "f04-lab", backHref = "../index.html", title = "F04 options", onChange } = {}) {
   const html = document.documentElement;
   let saved = {};
   try { saved = JSON.parse(localStorage.getItem(storageKey) || "{}"); } catch {}
@@ -122,13 +122,13 @@ export function initLab({ defaults = { a: "crop", b: "behind", c: "scrub", e: "f
   panel.className = "lab";
   panel.setAttribute("aria-label", "Prototype options");
   panel.innerHTML = `
-    <button class="lab-toggle" type="button" aria-expanded="false">F04 options</button>
+    <button class="lab-toggle" type="button" aria-expanded="false">${title}</button>
     <div class="lab-body" hidden>
       ${Object.entries(groups).map(([k, g]) => `
         <fieldset><legend>${g.label}</legend>
           ${g.options.map(([v, l]) => `<label><input type="radio" name="lab-${k}" value="${v}" ${state[k] === v ? "checked" : ""}> ${l}</label>`).join("")}
         </fieldset>`).join("")}
-      <a class="lab-back" href="${backHref}">All prototypes</a>
+      ${backHref ? `<a class="lab-back" href="${backHref}">All prototypes</a>` : ""}
     </div>`;
   document.body.append(panel);
   const btn = panel.querySelector(".lab-toggle");

@@ -72,3 +72,22 @@ main a, main button { pointer-events: auto; }
 html[data-paper="light"] .hero-name { color: var(--slate); text-shadow: 0 0 28px rgb(246 244 236 / .85); }
 html[data-paper="light"] .hero-typer, html[data-paper="light"] .hint { text-shadow: 0 0 14px rgb(246 244 236 / .9); }
 html[data-paper="dark"] body { color: var(--chalk); }
+
+/* night: the page text over the dark sky turns light */
+html[data-night="1"] body { color: var(--chalk); }
+html[data-night="1"] .hero-typer, html[data-night="1"] .hint, html[data-night="1"] .bar, html[data-night="1"] .tag { text-shadow: 0 1px 12px rgb(11 16 32 / .7); }
+html[data-night="1"] .hint { opacity: .85; }
+
+/* a still of the house shows while three.js loads, then the canvas fades in over it */
+.poster { position: fixed; inset: 0; z-index: 0; background: #0B1020 url("poster.jpg") center / cover no-repeat; }
+
+/* no WebGL 2: the wall sections become a plain page over the still */
+html.no-gl body { color: var(--chalk); }
+html.no-gl #world { display: none; }
+html.no-gl .ghost {
+  opacity: 1; min-height: 0; max-width: 760px; margin: 0 clamp(16px, 6vw, 96px) 12vh; padding: clamp(20px, 4vw, 40px);
+  background: rgb(11 16 32 / .82); border: 1px solid rgb(238 240 238 / .18); pointer-events: auto;
+}
+html.no-gl .ghost h2 { font-weight: 300; font-variation-settings: "wdth" 110; font-size: clamp(26px, 4vw, 40px); line-height: 1.1; margin: 0 0 .6em; }
+html.no-gl .ghost dt { font-weight: 600; } html.no-gl .ghost dd { margin: 0 0 .5em; }
+html.no-gl .hint { display: none; }
