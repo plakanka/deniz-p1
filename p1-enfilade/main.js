@@ -1068,15 +1068,18 @@ function stepAtScroll(y) {
   return anchors.length - 1;
 }
 const tanHalf = () => Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+// phones (portrait): stand close and face the photo; the board's text is shown as a card at the bottom instead
+const phone = () => camera.aspect < 0.85;
 // distance from a wall so the whole board (and an overhanging photo) fits the screen
-const viewDist = () => Math.max(3.3, (CW / 2 + 0.25 + (html.dataset.a === "resize" ? PW / 4 : 0)) / (tanHalf() * camera.aspect));
+const viewDist = () => phone() ? 4.3 : Math.max(3.3, (CW / 2 + 0.25 + (html.dataset.a === "resize" ? PW / 4 : 0)) / (tanHalf() * camera.aspect));
 const wrapA = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 const angLerp = (a, b, t) => a + wrapA(b - a) * t;
 
 function holdOf(i) {          // where the camera stands to read stop i (-1 = the entrance)
   if (i < 0) return { pos: v3(L.start), yaw: 0 };
-  const s = L.stops[i], d = viewDist();
-  return { pos: new THREE.Vector3(s.c[0] + s.n[0] * d, s.c[1] + E, s.c[2] + s.n[1] * d), yaw: Math.atan2(s.n[0], s.n[1]) };
+  const s = L.stops[i], d = viewDist(), st = stations[i];
+  const side = phone() && st?.info.photo ? st.pd * (CW - PW) / 2 : 0;    // where the photo ends up (A2 crop), along the board
+  return { pos: new THREE.Vector3(s.c[0] + s.n[0] * d + s.n[1] * side, s.c[1] + E, s.c[2] + s.n[1] * d - s.n[0] * side), yaw: Math.atan2(s.n[0], s.n[1]) };
 }
 const curveCache = new Map();
 function legCurve(i) {        // walking line from stop i-1 to stop i (i = STEPS.length → to the exit sill)
@@ -1108,6 +1111,7 @@ function pose(stepF) {
     if (f < a) { const w = walk(i, ss(0, a, f), from.yaw, to.yaw); out.pos = w.pos; out.yaw = w.yaw; }
     else { out.pos = to.pos; out.yaw = to.yaw; }
     out.still = ss(a - 0.04, a + 0.04, f);
+    if (phone()) out.pitch = -0.14 * out.still;                  // look down a little: the board sits above the card
     out.st = stations[i]; out.reveal = ss(a + 0.05, a + 0.25, f);
     return out;
   }
@@ -1165,10 +1169,21 @@ function watchSpeed(t) {
   slowFor = dt > 0.045 ? slowFor + dt : 0;
   if (slowFor > 3) { renderer.setPixelRatio(1); measure(); }
 }
+// the phone card: the text of the wall the camera is holding at (copied from its screen-reader section)
+const card = $(".card");
+let cardStep = null;
+function updateCard(target) {
+  const step = phone() && target.st && target.reveal > 0.3 ? target.st.step : null;
+  if (step === cardStep) return;
+  cardStep = step;
+  if (step) { card.innerHTML = (document.getElementById(step)?.innerHTML || "").replace(/ id="[^"]*"/g, ""); card.scrollTop = 0; }
+  card.classList.toggle("on", !!step);
+}
 function render() {
   const t = clock.getElapsedTime();
   watchSpeed(t);
   const target = pose(stepAtScroll(scrollY));
+  updateCard(target);
   const ease = reducedMotion ? 1 : 0.075;
   cam.pos.lerp(target.pos, ease);
   cam.yaw += wrapA(target.yaw - cam.yaw) * ease;

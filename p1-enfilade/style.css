@@ -91,3 +91,20 @@ html.no-gl .ghost {
 html.no-gl .ghost h2 { font-weight: 300; font-variation-settings: "wdth" 110; font-size: clamp(26px, 4vw, 40px); line-height: 1.1; margin: 0 0 .6em; }
 html.no-gl .ghost dt { font-weight: 600; } html.no-gl .ghost dd { margin: 0 0 .5em; }
 html.no-gl .hint { display: none; }
+
+/* phones: the text of the wall being visited, as a card at the bottom (main.js fills it; aria-hidden, the sections are the real copy) */
+.card {
+  position: fixed; left: 12px; right: 12px; bottom: 62px; z-index: 4; max-height: 40vh;   /* above the Options button */ overflow: auto; overscroll-behavior: contain;
+  padding: 18px 18px 14px; background: rgb(238 240 238 / .94); color: var(--slate); border-radius: 4px; box-shadow: 0 6px 28px rgb(11 16 32 / .35);
+  font-size: 14.5px; line-height: 1.45; opacity: 0; transform: translateY(16px); pointer-events: none;
+  transition: opacity .35s ease, transform .35s ease;
+}
+.card.on { opacity: 1; transform: none; pointer-events: auto; }
+.card h2 { margin: 0 0 .5em; font-weight: 400; font-variation-settings: "wdth" 110; font-size: 22px; line-height: 1.15; }
+.card h2 + * { margin-top: 0; }
+.card p, .card ul, .card ol, .card dl { margin: 0 0 .7em; }
+.card ul, .card ol { padding-left: 1.2em; }
+.card dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; }
+.card dt { font-weight: 600; } .card dd { margin: 0; }
+html.no-gl .card { display: none; }
+@media (min-aspect-ratio: 85/100) { .card { display: none; } }
