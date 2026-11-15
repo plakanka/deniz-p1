@@ -92,12 +92,6 @@ const PALETTES = {
     wood: 0x434446, fabric: 0x8f9194, white: 0xa8aaac, dark: 0x1f2022, rug: 0x7a7c7f, books: [0xb5b7b9, 0x5a5c5f, 0x8a8c8f, 0xd0d2d4, 0x3a3b3d] },
   nordic: { label: "K4 Nordic ice", wallSee: 0xc6d3dc, wallSolid: 0xe2eaef, ink: 0x1f3448, floor: "#B6C5D0", grid: "rgba(31,52,72,.2)", glow: 0x34465a, post: 0x5d6b78, step: 0xd2dde4,
     wood: 0xc4c9c6, fabric: 0x7f9db5, white: 0xeef3f6, dark: 0x2d3f50, rug: 0xaac0d0, books: [0x3f6680, 0x7aa0b8, 0xb9cfdc, 0x2c4a5e, 0x8fa9b6] },
-  fjord: { label: "K5 Deep fjord", wallSee: 0x6f8696, wallSolid: 0x8aa0ae, ink: 0x0f1e2b, floor: "#61778A", grid: "rgba(10,25,40,.28)", glow: 0x1c2b38, post: 0x2a3a48, step: 0x7c92a2,
-    wood: 0x52677a, fabric: 0x2f5d73, white: 0xc9d6de, dark: 0x16242f, rug: 0x3f6e78, books: [0x1e4a5c, 0x5e8a99, 0xa7c2c9, 0x2f3f55, 0x467a7f] },
-  walnut: { label: "K6 Walnut and linen", wallSee: 0xcfc1aa, wallSolid: 0xe9dfcf, ink: 0x3a2a1e, floor: "#C4B194", grid: "rgba(58,42,30,.2)", glow: 0x46382a, post: 0x4e3524, step: 0xd8cbb6,
-    wood: 0x6e4a2f, fabric: 0xb79f80, white: 0xf0e8da, dark: 0x2f241c, rug: 0x9c6b48, books: [0x7a3b2a, 0xb08850, 0x4d5a3f, 0xd2b98d, 0x5a3b2c] },
-  sage: { label: "K7 Sage plaster", wallSee: 0xb9c4b1, wallSolid: 0xdbe2d3, ink: 0x2c3a2e, floor: "#B2BBA7", grid: "rgba(44,58,46,.2)", glow: 0x38463a, post: 0x5a5a48, step: 0xc9d1c0,
-    wood: 0xa98d68, fabric: 0x768d70, white: 0xeceee6, dark: 0x37423a, rug: 0xc7b391, books: [0x5f7a5a, 0xa0864f, 0x8aa38a, 0x3f4f40, 0xc2a678] },
   primaries: { label: "K8 Gallery primaries", wallSee: 0xd4d4cf, wallSolid: 0xf0f0ea, ink: 0x1a1a1a, floor: "#D2D1CA", grid: "rgba(26,26,26,.18)", glow: 0x404040, post: 0x2a2a2a, step: 0xdedcd4,
     wood: 0xcdb98e, fabric: 0x2f4f9e, white: 0xf4f4ef, dark: 0x1a1a1a, rug: 0xd6a72c, books: [0xb8372b, 0x2f4f9e, 0xd6a72c, 0x1a1a1a, 0xe8e8e2] },
 };
@@ -322,7 +316,6 @@ books.forEach((m) => shared.add(m));
 
 /* lamps: the light over each wall board and the room lights after dark (colour, strength) */
 const LAMPS = {
-  sodium: { label: "Q1 Warm sodium (as before, orange)", board: 0xe9b44c, room: 0xffc77a, k: 1 },
   warm: { label: "Q2 Warm white", board: 0xffe2bd, room: 0xffdcae, k: 0.8 },
   neutral: { label: "Q3 Neutral white", board: 0xfff4ea, room: 0xfff0e0, k: 0.75 },
   cool: { label: "Q4 Cool daylight", board: 0xe8f0ff, room: 0xe6eeff, k: 0.75 },
