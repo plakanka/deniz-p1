@@ -1,4 +1,4 @@
-# Deniz Yılmaz, interior architect
+# Emine Deniz Akkaya, interior architect
 
 A walk-through three.js house by a lake; the CV hangs on its walls. Static site, no build step.
 Hosted with GitHub Pages: https://plakanka.github.io/deniz-p1/

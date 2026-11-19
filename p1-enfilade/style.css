@@ -42,20 +42,23 @@ main a, main button { pointer-events: auto; }
 .bar-name { text-decoration: none; font-weight: 600; }
 .bar nav { display: flex; gap: clamp(12px, 2.4vw, 28px); }
 .bar nav a { text-decoration: none; opacity: .75; }
+.lang { font: inherit; color: inherit; background: none; border: 1px solid currentColor; border-radius: 3px; padding: 0 6px; cursor: pointer; opacity: .75; letter-spacing: .04em; }
+.lang:hover { opacity: 1; }
 .bar nav a:hover { opacity: 1; text-decoration: underline; text-underline-offset: 4px; }
 
 .tag { display: inline-flex; align-items: center; gap: 10px; margin: 0 0 22px; font-size: 14px; }
-.tag span { border: 1px solid currentColor; padding: 1px 7px; font-variation-settings: "wdth" 75; font-weight: 500; }
+.tag span:first-child { border: 1px solid currentColor; padding: 1px 7px; font-variation-settings: "wdth" 75; font-weight: 500; }
 
 /* ---------- hero (the only HTML section on screen) ---------- */
 .hero { min-height: 100vh; min-height: 100svh; padding: 18vh clamp(16px, 6vw, 96px) 14vh; display: flex; flex-direction: column; justify-content: flex-end; }
 .hero-name {
   margin: 0; font-weight: 220; line-height: .86; letter-spacing: -.01em;
-  font-variation-settings: "wdth" 125; font-size: clamp(56px, 13.5vw, 230px);
+  font-variation-settings: "wdth" 125; font-size: clamp(50px, 11vw, 190px);   /* three lines: emine / deniz / akkaya */
   color: var(--chalk); text-shadow: 0 1px 30px rgb(39 49 59 / .18);
   display: flex; flex-direction: column;
 }
-.hero-name span:last-child { padding-left: .9em; }
+.hero-name span:nth-child(2) { padding-left: .45em; }
+.hero-name span:nth-child(3) { padding-left: .9em; }
 .hero-typer { margin: 28px 0 0; min-height: 1.3em; font-size: clamp(20px, 2.4vw, 32px); font-variation-settings: "wdth" 88; }
 .hint { margin: 6vh 0 0; font-size: 14px; opacity: .7; }
 
@@ -68,6 +71,10 @@ main a, main button { pointer-events: auto; }
 @media (max-width: 760px) {
   body { font-size: 16px; }
   .bar nav { gap: 12px; font-size: 13px; }
+}
+@media (max-width: 560px) {
+  .bar { justify-content: flex-end; }
+  .bar-name { display: none; }   /* the hero already shows the name; the full name and the nav do not fit on one line */
 }
 
 /* art styles (data-paper, set by main.js): on paper the light hero name turns to ink with a paper halo;

@@ -1,21 +1,28 @@
 import { initTyper } from "../shared/kit.js";
 
 /* The page text: the hero plus screen-reader copies of what hangs on the walls. Runs before main.js (and without it,
-   when there is no WebGL), so the CV is always readable. */
-const CV = window.CV;
+   when there is no WebGL), so the CV is always readable. Language comes from content.js (TR / EN). */
+const CV = window.CV, ui = CV.ui;
 const $ = (s) => document.querySelector(s);
-$("#first").textContent = CV.first;
-$("#last").textContent = CV.last;
+for (const el of document.querySelectorAll("[data-t]")) el.textContent = ui[el.dataset.t];
+$("#name").innerHTML = CV.nameLines.map((w) => `<span>${w}</span>`).join("");
+$("#name").setAttribute("aria-label", CV.name);
 $("#intro").textContent = CV.intro;
-$("#facts").innerHTML = CV.facts.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("");
+const dl = (rows) => rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("");
+$("#facts").innerHTML = dl(CV.facts);
 $("#work").innerHTML = CV.projects.map((p) => `
   <section class="ghost" id="${p.id}" data-step="${p.id}" aria-labelledby="t-${p.id}">
-    <h2 id="t-${p.id}">${p.title}</h2><p>${p.kind}, ${p.year}. ${p.text}</p>
-    <p>Area ${p.area}. Location ${p.place}. Role: ${p.role}.</p>
+    <h2 id="t-${p.id}">${p.title}</h2><p>${p.kind}. ${p.text}</p>
+    <dl>${dl(p.rows)}</dl>
   </section>`).join("");
-$("#path-list").innerHTML = CV.path.map(([y, w, wh]) => `<li>${y}: ${w}, ${wh}</li>`).join("");
+$("#skills").innerHTML = dl(CV.skills);
 $("#principles").innerHTML = CV.principles.map(([t, d]) => `<li><b>${t}.</b> ${d}</li>`).join("");
 $("#mail").textContent = CV.email;
 $("#mail").href = `mailto:${CV.email}`;
 $("#links").innerHTML = CV.links.map((l) => `<li><a href="${l.href}">${l.label}</a></li>`).join("");
+const sw = $("#lang");
+sw.textContent = ui.switchTo;
+sw.setAttribute("aria-label", ui.switchLabel);
+sw.lang = ui.switchTo.toLowerCase();
+sw.addEventListener("click", () => window.setLang(sw.lang));
 initTyper($("#typer"), CV.phrases);

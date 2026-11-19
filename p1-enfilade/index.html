@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Deniz Yılmaz, interior architect</title>
-<meta name="description" content="Walk through a house by a lake at night; Deniz Yılmaz's work, path and contact hang on its walls.">
+<title>Emine Deniz Akkaya, interior architect</title>
+<meta name="description" content="Emine Deniz Akkaya, interior architect: walk through a house by a lake at night; her projects, skills and contact hang on its walls. İç mimar Emine Deniz Akkaya'nın portfolyosu.">
 <meta name="theme-color" content="#0B1020">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Deniz Yılmaz, interior architect">
-<meta property="og:description" content="Walk through a house by a lake at night; the work hangs on its walls.">
+<meta property="og:title" content="Emine Deniz Akkaya, interior architect">
+<meta property="og:description" content="Walk through a house by a lake at night; her projects hang on its walls.">
 <meta property="og:image" content="https://plakanka.github.io/deniz-p1/p1-enfilade/og.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -29,36 +29,37 @@
 <aside class="card" aria-hidden="true"></aside>
 
 <header class="bar">
-  <a class="bar-name" href="#top">Deniz Yılmaz</a>
+  <a class="bar-name" href="#top">Emine Deniz Akkaya</a>
   <nav aria-label="Rooms">
-    <a href="#about">About</a><a href="#flat">Work</a><a href="#path">Path</a><a href="#contact">Contact</a>
+    <a href="#about" data-t="about">About</a><a href="#kolektif" data-t="work">Work</a><a href="#path" data-t="path">Skills</a><a href="#contact" data-t="contact">Contact</a>
+    <button class="lang" type="button" id="lang"></button>
   </nav>
 </header>
 
 <main id="top">
   <!-- the only section drawn in HTML; everything after it hangs on a wall in the 3D house -->
   <section class="room hero" data-step="entrance" aria-label="Introduction">
-    <p class="tag"><span>R.01</span>Entrance</p>
-    <h1 class="hero-name"><span id="first"></span><span id="last"></span></h1>
+    <p class="tag"><span>R.01</span><span class="t" data-t="entrance">Entrance</span></p>
+    <h1 class="hero-name" id="name"></h1>
     <p class="hero-typer" id="typer"></p>
-    <p class="hint">Scroll to walk through the house</p>
+    <p class="hint" data-t="hint">Scroll to walk through the house</p>
   </section>
 
   <!-- Screen-reader copies of what is on the walls. They also set how long each stop lasts. -->
   <section class="ghost" id="about" data-step="about" aria-labelledby="about-h">
-    <h2 id="about-h">About</h2>
+    <h2 id="about-h" data-t="about">About</h2>
     <p id="intro"></p>
     <dl id="facts"></dl>
   </section>
   <div id="work"></div>
   <section class="ghost" id="path" data-step="path" aria-labelledby="path-h">
-    <h2 id="path-h">Path so far</h2>
-    <ol id="path-list"></ol>
-    <h2>How I work</h2>
+    <h2 id="path-h" data-t="skills">Skills</h2>
+    <dl id="skills"></dl>
+    <h2 data-t="approach">How I work</h2>
     <ul id="principles"></ul>
   </section>
   <section class="ghost" id="contact" data-step="contact" aria-labelledby="contact-h">
-    <h2 id="contact-h">Let's build something quiet and useful.</h2>
+    <h2 id="contact-h" data-t="contactTitle">Let's talk about a space.</h2>
     <p><a id="mail" href="#"></a></p>
     <ul id="links"></ul>
   </section>

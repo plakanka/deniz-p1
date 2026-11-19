@@ -641,29 +641,30 @@ const font = (g, weight, size, wide = false) => {
 function stationContent(step, n) {
   const tag = `R.0${n}`;
   if (step === "about") return {
-    tag: `${tag}  Studio`, title: "About", photo: "concrete.jpg", palette: { bg: "#D9DADC", ink: "#101D22", accent: "#344751" },
+    tag: `${tag}  ${CV.ui.studio}`, title: CV.ui.about, photo: "about.jpg", palette: { bg: "#63534D", ink: "#F2EEEA", accent: "#D8D2CE" },
     body: CV.intro, rows: CV.facts,
   };
   if (step === "path") return {
-    tag: `${tag}  Archive`, title: "Path so far", photo: null,
-    columns: [CV.path.map(([y, w, wh]) => [y, `${w}, ${wh}`]), CV.principles],
+    tag: `${tag}  ${CV.ui.archive}`, title: CV.ui.skillsTitle, photo: null,
+    columns: [CV.skills, CV.principles], heads: [CV.ui.skills, CV.ui.approach],
   };
   if (step === "contact") return {
-    tag: `${tag}  Exit`, title: "Let's build something quiet and useful.", photo: null, contact: true,
+    tag: `${tag}  ${CV.ui.exit}`, title: CV.ui.contactTitle, photo: null, contact: true,
     body: CV.email, foot: CV.links.map((l) => l.label).join("     "),
   };
   const p = CV.projects.find((x) => x.id === step);
   return {
     tag: `${tag}  ${p.kind}`, title: p.title, photo: p.img, palette: p.palette,
-    sub: `${p.kind}, ${p.year}`, body: p.text, rows: [["Area", p.area], ["Location", p.place], ["Role", p.role]],
+    sub: p.kind, body: p.text, rows: p.rows,
   };
 }
 
-function paintBoard(st) {
+// f scales all the text: a board whose text runs off the bottom is painted again a little smaller
+function paintBoard(st, f = 1) {
   const mode = html.dataset.b;
   const c = st.canvas;
   const g = c.getContext("2d");
-  const Wc = c.width, Hc = c.height, k = Wc / 2048;
+  const Wc = c.width, Hc = c.height, k = Wc / 2048 * f;
   const info = st.info, img = st.img;
   const usePal = info.palette && ["palette", "exact", "letters"].includes(mode);
   const col = st.skin ? { bg: SKINS[st.skin].bg, ink: SKINS[st.skin].ink, accent: SKINS[st.skin].ink } : usePal ? info.palette : NEUTRAL;
@@ -725,22 +726,25 @@ function paintBoard(st) {
     }
   }
   if (info.foot) { font(g, 500, 40 * k); g.fillText(info.foot, x, y + 40 * k); }
+  let bottom = info.foot ? y + 40 * k : y;
   if (info.columns) {
     const colW = (Wc - pad * 3) / 2;
     info.columns.forEach((list, ci) => {
       let yy = y;
       const cx = pad + ci * (colW + pad);
-      font(g, 600, 40 * k); g.fillText(ci ? "How I work" : "Timeline", cx, yy); yy += 70 * k;
+      font(g, 600, 40 * k); g.fillText(info.heads[ci], cx, yy); yy += 70 * k;
       for (const [a, b] of list) {
         font(g, 600, 34 * k); g.fillText(a, cx, yy);
         font(g, 400, 33 * k);
-        const ls = wrap(g, b, colW - (ci ? 0 : 150 * k));
-        const bx = ci ? cx : cx + 150 * k, by = ci ? yy + 42 * k : yy;
+        const ls = wrap(g, b, colW - (ci ? 0 : 190 * k));
+        const bx = ci ? cx : cx + 190 * k, by = ci ? yy + 42 * k : yy;
         ls.forEach((l, i) => g.fillText(l, bx, by + i * 41 * k));
         yy = by + ls.length * 41 * k + 22 * k;
       }
+      bottom = Math.max(bottom, yy - 22 * k);
     });
   }
+  if (bottom > Hc - 50 * (Wc / 2048) && f > 0.55) return paintBoard(st, f * 0.93);
   st.boardTex.needsUpdate = true;
 }
 

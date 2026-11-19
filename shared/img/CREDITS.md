@@ -1,7 +1,15 @@
-# Image credits (placeholders)
+# Image credits
 
-All CC0 (public domain), originally from Unsplash, via Wikimedia Commons.
-Replace with her own photos before publishing.
+Her own renders, from her portfolio (portfolyo.pdf, Nov 2026), resized:
+
+| File | Project | From the portfolio |
+|---|---|---|
+| about.jpg | GSF Kolektif Mekan, renewed façade | page 4 |
+| kolektif.jpg | GSF Kolektif Mekan, interior | page 6 |
+| hafele.jpg | Häfele kiosk and fair stand | page 9 |
+| atolye.jpg | Sanat ve Tasarım Disiplinlerarası Atölye | page 12 |
+
+Placeholders, still used by the older prototypes P2/P3. All CC0 (public domain), originally from Unsplash, via Wikimedia Commons:
 
 | File | Commons title | Source | Licence |
 |---|---|---|---|
