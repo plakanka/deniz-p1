@@ -21,7 +21,7 @@
     en: {
       lang: "en",
       name: "Emine Deniz Akkaya",
-      nameLines: ["emine", "deniz", "akkaya"],
+      nameLines: ["deniz", "akkaya"],   // the hero; the bar and the title keep the full name
       first: "emine deniz", last: "akkaya",
       role: "Interior architect", city: "",
       email, links: [],
@@ -92,16 +92,16 @@
         hint: "Scroll to walk through the house", studio: "Studio", archive: "Skills", exit: "Exit",
         skillsTitle: "Skills and approach", skills: "Skills", approach: "How I work",
         contactTitle: "Let's talk about a space.", switchTo: "TR", switchLabel: "Türkçe",
-        explore: "Explore the project", clickHint: "Click the board to explore the project", scrollHint: "Keep scrolling for more renders",
+        explore: "Explore the project", clickHint: "Click the board to explore the project",
         renders: "Renders", sheets: "Drawings and sheets", render: "Render", sheet: "Sheet", close: "Close", prev: "Previous", next: "Next",
-        zoom: "Click the image to zoom in", leave: "Esc or scroll to leave", back: "Back to the house", nextProject: "Next project", of: "of",
+        zoom: "Click the image to zoom in",
       },
     },
 
     tr: {
       lang: "tr",
       name: "Emine Deniz Akkaya",
-      nameLines: ["emine", "deniz", "akkaya"],
+      nameLines: ["deniz", "akkaya"],   // the hero; the bar and the title keep the full name
       first: "emine deniz", last: "akkaya",
       role: "İç mimar", city: "",
       email, links: [],
@@ -172,9 +172,9 @@
         hint: "Evin içinde yürümek için kaydırın", studio: "Stüdyo", archive: "Yetkinlikler", exit: "Çıkış",
         skillsTitle: "Yetkinlikler ve yaklaşım", skills: "Yetkinlikler", approach: "Yaklaşımım",
         contactTitle: "Bir mekan üzerine konuşalım.", switchTo: "EN", switchLabel: "English",
-        explore: "Projeyi incele", clickHint: "Projeyi incelemek için panoya tıklayın", scrollHint: "Diğer görseller için kaydırmaya devam edin",
+        explore: "Projeyi incele", clickHint: "Projeyi incelemek için panoya tıklayın",
         renders: "Görselleştirmeler", sheets: "Çizimler ve paftalar", render: "Görselleştirme", sheet: "Pafta", close: "Kapat", prev: "Önceki", next: "Sonraki",
-        zoom: "Yakınlaştırmak için görsele tıklayın", leave: "Çıkmak için Esc veya kaydırın", back: "Eve dön", nextProject: "Sonraki proje", of: "/",
+        zoom: "Yakınlaştırmak için görsele tıklayın",
       },
     },
   };
@@ -192,7 +192,7 @@
            tr: ["Tasarım süreci", "Teknik çizimler ve leke çalışması", "Görselleştirmeler ve merdiven detayları"] } },
   };
   for (const l in CVS) for (const p of CVS[l].projects) {
-    const g = G[p.id], nm = (f) => ({ src: `${p.id}/${f}.jpg`, thumb: `${p.id}/t-${f}.jpg` });
+    const g = G[p.id], nm = (f) => ({ src: `${p.id}/${f}.jpg`, mid: `${p.id}/m-${f}.jpg`, thumb: `${p.id}/t-${f}.jpg` });   // full, 1100 px, 560 px
     p.gallery = [
       ...g.r.map(([w, h], i) => ({ kind: "render", w, h, ...nm(`r${String(i + 1).padStart(2, "0")}`) })),
       ...g.s[l].map((caption, i) => ({ kind: "sheet", w: 3200, h: 2345, caption, ...nm(`s${i + 1}`) })),
@@ -205,13 +205,23 @@
     else lang = localStorage.getItem("lang");
   } catch {}
   if (!(lang in CVS)) lang = /^tr\b/i.test(navigator.language || "") ? "tr" : "en";
+  // a #link to a wall (e.g. #atolye): the browser would jump to the section's top, which is the walk *to* that wall;
+  // main.js scrolls to where the camera holds instead, so take the hash off before the browser acts on it
+  if (location.hash.length > 1 && document.querySelector("script[data-walk]")) {
+    try { window.startHash = decodeURIComponent(location.hash.slice(1)); } catch { window.startHash = location.hash.slice(1); }   // e.g. #%E0
+    history.replaceState(null, "", location.pathname + location.search);
+  }
   window.CVS = CVS;
   window.CV = CVS[lang];
   document.documentElement.lang = lang;
+  // Turkish text needs the latin-ext half of the font (ı ş ğ İ) from the start, also for the boards painted on canvas
+  if (lang === "tr" && document.querySelector("script[data-walk]")) {
+    document.head.append(Object.assign(document.createElement("link"), { rel: "preload", as: "font", type: "font/woff2", crossOrigin: "anonymous", href: "../shared/fonts/archivo-latin-ext.woff2" }));
+  }
   // switch language: remember it and reload (the 3D boards are painted from this text)
   window.setLang = (l) => {
     try { localStorage.setItem("lang", l); } catch {}
-    const u = new URL(location.href); u.searchParams.delete("lang");
+    const u = new URL(location.href); u.searchParams.delete("lang"); u.hash = "";   // start at the top, not at an old #wall
     location.replace(u.href);
   };
 })();

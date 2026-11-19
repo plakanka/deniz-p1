@@ -14,9 +14,8 @@
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,200..700&display=swap" rel="stylesheet">
+<link rel="preload" href="../shared/fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../shared/fonts/fonts.css">
 <link rel="stylesheet" href="../shared/kit.css">
 <link rel="stylesheet" href="style.css">
 <script type="importmap">{ "imports": { "three": "../vendor/three.module.min.js" } }</script>
@@ -65,12 +64,16 @@
   </section>
 </main>
 
-<script src="../shared/content.js"></script>
+<script src="../shared/content.js" data-walk></script>
 <script type="module">
   import "./page.js";
   // the 3D house needs WebGL 2; without it (or if it fails to start) the sections are shown as a plain page over the still
   const gl = (() => { try { return !!document.createElement("canvas").getContext("webgl2"); } catch { return false; } })();
-  const plain = () => document.documentElement.classList.add("no-gl");
+  const plain = () => {
+    document.documentElement.classList.add("no-gl");
+    const id = window.startHash;                       // content.js took the #… off; on the plain page it is a normal jump
+    if (id) { history.replaceState(null, "", `#${id}`); document.getElementById(id)?.scrollIntoView(); }
+  };
   if (gl) import("./main.js").catch((e) => { console.error(e); plain(); }); else plain();
 </script>
 </body>

@@ -387,7 +387,7 @@ export function createArtPass(renderer, scene, camera) {
     const inside = (p) => p.x > x0 - 0.6 && p.x < x1 + 0.6 && p.z > z0 - 0.6 && p.z < z1 + 0.6 && p.y > -1 && p.y < 9;
     const seen = new Set();
     world.traverse((o) => {
-      if (!o.isLineSegments || o.userData.isArtClone || o.geometry.type !== "EdgesGeometry") return;
+      if (!o.isLineSegments || o.userData.isArtClone || (o.geometry.type !== "EdgesGeometry" && !o.userData.edges)) return;
       const src = o.geometry.attributes.position;
       o.updateWorldMatrix(true, false);
       for (let i = 0; i < src.count / 2; i++) {
@@ -425,7 +425,7 @@ export function createArtPass(renderer, scene, camera) {
   // half-float + 4x MSAA keeps the scene's highlights and smooth edges. Some browsers/GPUs (e.g. some Safari) can't render
   // to half-float, or claim to and fail with MSAA, so each setup is tried for real and the first that works is used.
   const { type, samples } = pickTargets(renderer);
-  console.info(`P1 art styles: ${type === THREE.HalfFloatType ? "half-float" : "8-bit"} targets, ${samples}x MSAA`);
+  if (type !== THREE.HalfFloatType || samples !== 4) console.info(`P1 art styles: fallback to ${type === THREE.HalfFloatType ? "half-float" : "8-bit"} targets, ${samples}x MSAA`);
   const rtA = new THREE.WebGLRenderTarget(1, 1, { type, samples, depthTexture });
   const rtB = new THREE.WebGLRenderTarget(1, 1, { type, samples });
   const post = new THREE.ShaderMaterial({
@@ -468,7 +468,7 @@ export function createArtPass(renderer, scene, camera) {
           const env = houseOnly && !house;
           c.visible = !(env && o.material?.userData?.artKind === "sky");
           c.material = env ? hideMat : Array.isArray(o.material) ? o.material.map(surface) : surface(o.material);
-        } else if (o.isLineSegments && o.geometry.type === "EdgesGeometry") {
+        } else if (o.isLineSegments && (o.geometry.type === "EdgesGeometry" || o.userData.edges)) {   // merged outlines are flagged
           const c = cloneOf(o, () => new THREE.LineSegments(handLines(o), inkMat));
           c.visible = !houseOnly || house;
         }
