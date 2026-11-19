@@ -11,9 +11,10 @@ $("#intro").textContent = CV.intro;
 const dl = (rows) => rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("");
 $("#facts").innerHTML = dl(CV.facts);
 $("#work").innerHTML = CV.projects.map((p) => `
-  <section class="ghost" id="${p.id}" data-step="${p.id}" aria-labelledby="t-${p.id}">
+  <section class="ghost proj" id="${p.id}" data-step="${p.id}" aria-labelledby="t-${p.id}">
     <h2 id="t-${p.id}">${p.title}</h2><p>${p.kind}. ${p.text}</p>
     <dl>${dl(p.rows)}</dl>
+    <p><a class="explore-link" href="project.html?p=${p.id}" data-p="${p.id}">${ui.explore} →</a></p>
   </section>`).join("");
 $("#skills").innerHTML = dl(CV.skills);
 $("#principles").innerHTML = CV.principles.map(([t, d]) => `<li><b>${t}.</b> ${d}</li>`).join("");

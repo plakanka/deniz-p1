@@ -92,6 +92,9 @@
         hint: "Scroll to walk through the house", studio: "Studio", archive: "Skills", exit: "Exit",
         skillsTitle: "Skills and approach", skills: "Skills", approach: "How I work",
         contactTitle: "Let's talk about a space.", switchTo: "TR", switchLabel: "Türkçe",
+        explore: "Explore the project", clickHint: "Click the board to explore the project", scrollHint: "Keep scrolling for more renders",
+        renders: "Renders", sheets: "Drawings and sheets", render: "Render", sheet: "Sheet", close: "Close", prev: "Previous", next: "Next",
+        zoom: "Click the image to zoom in", leave: "Esc or scroll to leave", back: "Back to the house", nextProject: "Next project", of: "of",
       },
     },
 
@@ -169,9 +172,32 @@
         hint: "Evin içinde yürümek için kaydırın", studio: "Stüdyo", archive: "Yetkinlikler", exit: "Çıkış",
         skillsTitle: "Yetkinlikler ve yaklaşım", skills: "Yetkinlikler", approach: "Yaklaşımım",
         contactTitle: "Bir mekan üzerine konuşalım.", switchTo: "EN", switchLabel: "English",
+        explore: "Projeyi incele", clickHint: "Projeyi incelemek için panoya tıklayın", scrollHint: "Diğer görseller için kaydırmaya devam edin",
+        renders: "Görselleştirmeler", sheets: "Çizimler ve paftalar", render: "Görselleştirme", sheet: "Pafta", close: "Kapat", prev: "Önceki", next: "Sonraki",
+        zoom: "Yakınlaştırmak için görsele tıklayın", leave: "Çıkmak için Esc veya kaydırın", back: "Eve dön", nextProject: "Sonraki proje", of: "/",
       },
     },
   };
+
+  // every render and portfolio sheet per project (shared/img/<id>/rNN.jpg, sN.jpg; t-… are thumbnails). [kind, file, width, height]
+  const G = {
+    kolektif: { r: [[1493, 1054], [1447, 1006], [1672, 941], [1800, 801], [1491, 1055], [1494, 1053], [1492, 1054], [1494, 1053], [1492, 1054], [1494, 1052], [1489, 1056], [1494, 1053], [1484, 1060], [1494, 1053]],
+      s: { en: ["Site, concept and façade", "Floor plans and renders", "Sections, exploded perspective and renders"],
+           tr: ["Vaziyet, kavram ve cephe", "Kat planları ve görselleştirmeler", "Kesitler, patlatılmış perspektif ve görselleştirmeler"] } },
+    hafele: { r: [[1800, 1274], [1552, 1076], [1800, 1013], [964, 959], [967, 1022], [971, 1018], [1309, 1313], [1190, 674], [1800, 1038], [1800, 1199]],
+      s: { en: ["Design process: the hidden joint", "Kiosk: drawings and renders", "Fair stand: drawings and renders"],
+           tr: ["Tasarım süreci: gizli birleşim", "Kiosk: teknik çizimler ve görselleştirmeler", "Fuar standı: teknik çizimler ve görselleştirmeler"] } },
+    atolye: { r: [[1444, 1089], [1688, 932], [1470, 1070], [1336, 1177], [1402, 1122], [1402, 1122], [1672, 941], [1667, 943], [1400, 1104]],
+      s: { en: ["Design process", "Plans, sections and tone study", "Renders and stair details"],
+           tr: ["Tasarım süreci", "Teknik çizimler ve leke çalışması", "Görselleştirmeler ve merdiven detayları"] } },
+  };
+  for (const l in CVS) for (const p of CVS[l].projects) {
+    const g = G[p.id], nm = (f) => ({ src: `${p.id}/${f}.jpg`, thumb: `${p.id}/t-${f}.jpg` });
+    p.gallery = [
+      ...g.r.map(([w, h], i) => ({ kind: "render", w, h, ...nm(`r${String(i + 1).padStart(2, "0")}`) })),
+      ...g.s[l].map((caption, i) => ({ kind: "sheet", w: 3200, h: 2345, caption, ...nm(`s${i + 1}`) })),
+    ];
+  }
 
   let lang = new URLSearchParams(location.search).get("lang");
   try {

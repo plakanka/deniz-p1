@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { initLab, reducedMotion } from "../shared/kit.js";
 import { lakeHouse, SHAPES } from "./layouts.js";
 import { ART, createArtPass } from "./post.js";
+import { openSheet, openViewer } from "./explore.js";
 
 /* P1 Enfilade: a line-drawn house you walk through. Only the entrance is HTML; every other section
    hangs on a wall (photo + text drawn into the scene). The camera walks up to each wall, turns,
@@ -654,7 +655,7 @@ function stationContent(step, n) {
   };
   const p = CV.projects.find((x) => x.id === step);
   return {
-    tag: `${tag}  ${p.kind}`, title: p.title, photo: p.img, palette: p.palette,
+    tag: `${tag}  ${p.kind}`, title: p.title, photo: p.img, palette: p.palette, project: p,
     sub: p.kind, body: p.text, rows: p.rows,
   };
 }
@@ -670,6 +671,7 @@ function paintBoard(st, f = 1) {
   const col = st.skin ? { bg: SKINS[st.skin].bg, ink: SKINS[st.skin].ink, accent: SKINS[st.skin].ink } : usePal ? info.palette : NEUTRAL;
   const photoTitle = ["exact", "letters"].includes(mode) && img;
   g.globalCompositeOperation = "source-over";
+  if (st.viewer) { g.fillStyle = col.bg; g.fillRect(0, 0, Wc, Hc); st.boardTex.needsUpdate = true; return; }   // D3: the board is a plain mount
   const sk = st.skin ? SKINS[st.skin] : null;
   g.shadowColor = "transparent"; g.shadowBlur = 0;
   if (sk?.clear) g.clearRect(0, 0, Wc, Hc);
@@ -779,9 +781,7 @@ function makeStation(parent, step, n, { c = null, nrm = null, pd = 1, garden = f
     photoTexture(info.photo).then((t) => {
       const tex = t.clone(); tex.needsUpdate = true;
       mat.map = tex; mat.needsUpdate = true;
-      st.img = t.image;
-      const ia = t.image.width / t.image.height, ca = CW / CH;     // cover-crop the photo to the board
-      st.uv = ia > ca ? { u0: (1 - ca / ia) / 2, uw: ca / ia, v0: 0, vh: 1 } : { u0: 0, uw: 1, v0: (1 - ia / ca) / 2, vh: ia / ca };
+      st.img = t.image; st.uv = coverUV(t.image); st.shown = "-1|false";
       document.fonts.ready.then(() => paintBoard(st));
     });
   }
@@ -793,6 +793,25 @@ function makeStation(parent, step, n, { c = null, nrm = null, pd = 1, garden = f
   return st;
 }
 
+const coverUV = (img) => {                                       // cover-crop a photo to the board
+  const ia = img.width / img.height, ca = CW / CH;
+  return ia > ca ? { u0: (1 - ca / ia) / 2, uw: ca / ia, v0: 0, vh: 1 } : { u0: 0, uw: 1, v0: (1 - ia / ca) / 2, vh: ia / ca };
+};
+// show gallery image k on a project's board (k = -1: the board's own photo); viewer = D3's fitted mount
+function boardImage(st, k, viewer = false) {
+  const key = `${k}|${viewer}`;
+  if (!st.photo || !st.shown || st.shown === key) return;
+  st.shown = key;
+  const file = k < 0 ? st.info.photo : st.info.project.gallery[k].src;
+  photoTexture(file).then((t) => {
+    if (st.shown !== key) return;                                 // already asked for another one
+    const tex = t.clone(); tex.needsUpdate = true;
+    st.photo.material.map?.dispose(); st.photo.material.map = tex; st.photo.material.needsUpdate = true;
+    st.img = t.image; st.uv = coverUV(t.image); st.viewer = viewer;
+    paintBoard(st); placePhoto(st, st.p);
+  });
+}
+
 // F04 inside the scene: move the photo aside on the wall (A1 resize / A2 crop / A3 slide)
 function placePhoto(st, p) {
   const ph = st.photo;
@@ -800,6 +819,11 @@ function placePhoto(st, p) {
   if (!ph || !st.uv) return;
   ph.visible = true;
   const a = html.dataset.a, d = st.pd, tex = ph.material.map;
+  if (st.viewer) {                                    // D3: the whole image, fitted inside the board
+    const ia = st.img.width / st.img.height, w = Math.min(phone() ? PW : CW - 0.12, (CH - 0.12) * ia);   // phones: the middle of the board
+    ph.scale.set(w, w / ia, 1); ph.position.x = 0; tex.repeat.set(1, 1); tex.offset.set(0, 0);
+    return;
+  }
   let w = CW, h = CH, x = 0, u0 = st.uv.u0, uw = st.uv.uw;
   if (a === "resize") {
     const s = lerp(1, PW / CW, p);
@@ -1111,7 +1135,10 @@ function pose(stepF) {
   const r = Math.min(STEPS.length + 1, Math.floor(stepF)), f = clamp(stepF - r);
   if (r === 0) return out;
   if (r <= STEPS.length) {                                     // walk to a wall, then hold still
-    const i = r - 1, { a } = legCurve(i), from = holdOf(i - 1), to = holdOf(i);
+    const i = r - 1, from = holdOf(i - 1), to = holdOf(i);
+    let { a } = legCurve(i);
+    if (html.dataset.d === "scroll" && stations[i]?.info.project) a *= SCROLL_A;   // D2: the walk keeps its length, the hold is longer
+    out.hold = clamp((f - a - 0.25) / (0.96 - a - 0.25));
     if (f < a) { const w = walk(i, ss(0, a, f), from.yaw, to.yaw); out.pos = w.pos; out.yaw = w.yaw; }
     else { out.pos = to.pos; out.yaw = to.yaw; }
     out.still = ss(a - 0.04, a + 0.04, f);
@@ -1158,8 +1185,107 @@ function contactHit(e) {
   ray.setFromCamera(ndc, camera);
   return ray.intersectObject(st.board).length > 0;
 }
-addEventListener("pointermove", (e) => canvas.classList.toggle("pointer", contactHit(e)));
-addEventListener("click", (e) => { if (!e.target.closest("a,button,.lab") && contactHit(e)) location.href = `mailto:${CV.email}`; });
+/* ---------- "Project detail": how a project can be looked into (D1 sheet, D2 scroll, D3 step up, D4 page) ---------- */
+const SCROLL_A = 260 / 560;                // D2: project sections are 560vh instead of 260vh (style.css)
+const detail = () => html.dataset.d || "sheet";
+function projectHit(e) {                   // the project board under the pointer, if it is near enough to read
+  ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  const sts = stations.filter((s) => s.info.project);
+  const hit = ray.intersectObjects(sts.map((s) => s.board), false)[0];
+  return hit && hit.distance < 16 ? sts.find((s) => s.board === hit.object) : null;
+}
+function explore(st) {
+  const p = st.info.project, d = detail();
+  if (d === "sheet") openSheet(p);
+  else if (d === "step") lookStart(st);
+  else if (d === "page") location.href = `project.html?p=${p.id}`;
+}
+addEventListener("pointermove", (e) => {
+  if (e.target !== canvas) return;
+  canvas.classList.toggle("pointer", contactHit(e) || (detail() !== "scroll" && !!projectHit(e)));
+});
+addEventListener("click", (e) => {
+  if (e.target !== canvas) return;
+  if (contactHit(e)) { location.href = `mailto:${CV.email}`; return; }
+  const st = projectHit(e);
+  if (!st) return;
+  if (look && look.st === st) openViewer(st.info.project.gallery, look.k, { title: st.info.project.title });   // zoom in
+  else if (detail() !== "scroll") explore(st);
+});
+// the "Explore the project" links in the page sections (and the phone card) lead to the project page;
+// in D1 / D3 they open the sheet / step up instead
+addEventListener("click", (e) => {
+  const a = e.target.closest(".explore-link");
+  if (!a || detail() === "page") return;
+  const st = stations.find((s) => s.info.project?.id === a.dataset.p);
+  if (!st) return;
+  e.preventDefault(); explore(st);
+});
+
+// D3: the camera steps up to the board, which becomes a viewer for every render and drawing
+let look = null;
+const lookUI = document.createElement("div");
+lookUI.className = "look"; lookUI.hidden = true;
+lookUI.innerHTML = `<button class="v-btn v-prev" type="button" aria-label="${CV.ui.prev}">‹</button>
+  <button class="v-btn v-next" type="button" aria-label="${CV.ui.next}">›</button>
+  <button class="v-close" type="button" aria-label="${CV.ui.close}">×</button>
+  <p class="look-bar"><span class="look-cap"></span><span class="look-count"></span><small>${CV.ui.zoom} · ${CV.ui.leave}</small></p>`;
+document.body.append(lookUI);
+const lookShow = () => {
+  const g = look.st.info.project.gallery, it = g[look.k];
+  lookUI.querySelector(".look-cap").textContent = it.caption ? `${CV.ui.sheet}: ${it.caption}` : look.st.info.project.title;
+  lookUI.querySelector(".look-count").textContent = `${look.k + 1} / ${g.length}`;
+  photoTexture(g[(look.k + 1) % g.length].src);                  // load the next one
+};
+function lookStart(st) {
+  look = { st, k: 0, y: scrollY };
+  lookUI.hidden = false; lookShow();
+  lookUI.querySelector(".v-next").focus({ preventScroll: true });
+}
+function lookEnd() {
+  if (!look) return;
+  look = null; lookUI.hidden = true;
+}
+const lookGo = (d) => { const n = look.st.info.project.gallery.length; look.k = (look.k + d + n) % n; lookShow(); };
+lookUI.querySelector(".v-prev").onclick = () => lookGo(-1);
+lookUI.querySelector(".v-next").onclick = () => lookGo(1);
+lookUI.querySelector(".v-close").onclick = lookEnd;
+addEventListener("keydown", (e) => {
+  if (!look || document.querySelector(".viewer, .sheet")) return;
+  if (e.key === "Escape") lookEnd();
+  if (e.key === "ArrowLeft") lookGo(-1);
+  if (e.key === "ArrowRight") lookGo(1);
+});
+addEventListener("scroll", () => { if (look && Math.abs(scrollY - look.y) > 60) lookEnd(); }, { passive: true });
+function lookPose(target) {
+  const i = stations.indexOf(look.st), s = L.stops[i];
+  // close enough that the board fills the screen; phones stay at their reading distance (further back, the roof gets in the way)
+  const d = phone() ? viewDist() : Math.max((CH / 2 + 0.2) / tanHalf(), (CW / 2 + 0.2) / (tanHalf() * camera.aspect));
+  return { ...target, pos: new THREE.Vector3(s.c[0] + s.n[0] * d, s.c[1] + 1.75, s.c[2] + s.n[1] * d), yaw: Math.atan2(s.n[0], s.n[1]), pitch: 0, still: 1, st: look.st, reveal: 1 };
+}
+
+// the hint under a project board (desktop; phones have the button in the card)
+const dhint = document.createElement("p");
+dhint.className = "dhint"; dhint.setAttribute("aria-hidden", "true");
+document.body.append(dhint);
+function updateDetail(target) {
+  const d = detail(), st = target.st?.info.project ? target.st : null;
+  for (const s of stations) {
+    if (!s.info.project) continue;
+    if (look?.st === s) boardImage(s, look.k, true);
+    else if (d === "scroll" && s === st) {
+      const n = s.info.project.gallery.filter((g) => g.kind === "render").length;
+      const k = Math.min(n - 1, Math.floor(target.hold * n));
+      boardImage(s, k === 0 ? -1 : k);
+      if (k + 1 < n) photoTexture(s.info.project.gallery[k + 1].src);
+      dhint.textContent = `${CV.ui.scrollHint} · ${k + 1} / ${n}`;
+    } else boardImage(s, -1);
+  }
+  const show = st && !look && !phone() && target.reveal > 0.6;
+  if (show && d !== "scroll") dhint.textContent = CV.ui.clickHint;
+  dhint.classList.toggle("on", !!show);
+}
 
 const cam = { pos: new THREE.Vector3(0.35, E, 4), yaw: 0, pitch: 0 };
 let mYaw = 0, mPitch = 0;
@@ -1177,7 +1303,7 @@ function watchSpeed(t) {
 const card = $(".card");
 let cardStep = null;
 function updateCard(target) {
-  const step = phone() && target.st && target.reveal > 0.3 ? target.st.step : null;
+  const step = phone() && !look && target.st && target.reveal > 0.3 ? target.st.step : null;
   if (step === cardStep) return;
   cardStep = step;
   if (step) { card.innerHTML = (document.getElementById(step)?.innerHTML || "").replace(/ id="[^"]*"/g, ""); card.scrollTop = 0; }
@@ -1186,8 +1312,10 @@ function updateCard(target) {
 function render() {
   const t = clock.getElapsedTime();
   watchSpeed(t);
-  const target = pose(stepAtScroll(scrollY));
+  let target = pose(stepAtScroll(scrollY));
+  if (look) target = lookPose(target);
   updateCard(target);
+  updateDetail(target);
   const ease = reducedMotion ? 1 : 0.075;
   cam.pos.lerp(target.pos, ease);
   cam.yaw += wrapA(target.yaw - cam.yaw) * ease;
@@ -1238,11 +1366,17 @@ function render() {
 const FIXED = { h: "stack", p: "3", s: "forestPeaks", n: "summer", t: "night", x: "clear", w: "see", g: "sky", u: "off", v: "house", a: "crop", b: "exact", c: "scrub" };
 for (const k of ["a", "b", "c"]) html.dataset[k] = FIXED[k];
 initLab({
-  defaults: { l: "warm", y: "current", k: "drafting" },
+  defaults: { l: "warm", y: "current", k: "drafting", d: "sheet" },
   groups: {
     l: { label: "Lamps", options: Object.entries(LAMPS).map(([k, v]) => [k, v.label]) },
     y: { label: "Art style", options: Object.entries(ART).map(([k, v]) => [k, v.label]) },
     k: { label: "House colours", options: Object.entries(PALETTES).map(([k, v]) => [k, v.label]) },
+    d: { label: "Project detail", options: [
+      ["sheet", "D1 Click a board: a project sheet opens over the house"],
+      ["scroll", "D2 Keep scrolling: the board flips through the renders"],
+      ["step", "D3 Click a board: step up to it and browse renders and drawings on the wall"],
+      ["page", "D4 Click a board: open the project's own page"],
+    ] },
   },
   storageKey: "p1-lake3",
   title: "Options",
@@ -1259,6 +1393,8 @@ initLab({
     html.dataset.paper = !art.on || s.v === "house" || LT.sun < 1 ? "none" : ART[s.y].dark ? "dark" : "light";   // page text on the sketch
     applyLamps();
     curveCache.clear();
+    lookEnd();
+    measure();                                          // D2 changes how long the project stops are
   },
 });
 measure();
