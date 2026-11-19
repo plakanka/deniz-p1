@@ -80,13 +80,7 @@ main a, main button { pointer-events: auto; }
   .bar-name { display: none; }   /* the hero already shows the name; the full name and the nav do not fit on one line */
 }
 
-/* art styles (data-paper, set by main.js): on paper the light hero name turns to ink with a paper halo;
-   on dark paper (blueprint, blackboard) all page text turns light */
-html[data-paper="light"] .hero-name { color: var(--slate); text-shadow: 0 0 28px rgb(246 244 236 / .85); }
-html[data-paper="light"] .hero-typer, html[data-paper="light"] .hint { text-shadow: 0 0 14px rgb(246 244 236 / .9); }
-html[data-paper="dark"] body { color: var(--chalk); }
-
-/* night: the page text over the dark sky turns light */
+/* night (set by main.js; the plain page without 3D keeps dark text): the page text over the dark sky turns light */
 html[data-night="1"] body { color: var(--chalk); }
 html[data-night="1"] .hero-typer, html[data-night="1"] .hint, html[data-night="1"] .bar, html[data-night="1"] .tag { text-shadow: 0 1px 12px rgb(11 16 32 / .7); }
 html[data-night="1"] .hint { opacity: .85; }

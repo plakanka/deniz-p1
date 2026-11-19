@@ -3,36 +3,33 @@ import * as THREE from "three";
 /* Art styles. A1 "current" renders exactly as before. Every other style renders each frame twice:
    pass A = the normal scene (A1: sky, stars, night, lit rooms, fog, weather, colours … all of it),
    pass B = a DRAWING of the same scene: hand-drawn edge lines that overshoot their corners, faint construction
-            lines off the house's long edges, and strokes laid on the shadowed faces (following each surface).
+            lines off the house's long edges, and how shaded each face is (hatching strokes are off: decided 2026-11-15).
    The last pass combines them per style: where the scene is bright it becomes paper (tinted by the scene's own
    colour), where it is dark (night, shade) the A1 picture stays, and the drawing goes on top in the style's
    medium (ink lines switch to light chalk on dark ground). So night stays night, stars stay, weather stays.
    Pass B uses copies of the objects on layer 2 (same geometry, drawn materials), so nothing is swapped per frame.
    Wall boards and photos are never drawn over: in pass B they mark their pixels and the last pass shows A there.
-   "House only": the surroundings get depth-only copies in pass B (they still hide the house) and stay A1. */
+   Only the house is drawn (decided): the surroundings get depth-only copies in pass B (they still hide the house) and stay A1. */
 
 const LAYER = 2;
 
 /* style table
-   pat: stroke pattern on surfaces (0 hatching, 1 stipple, 2 broad chalk strokes, 3 pencil strokes, 4 marker streaks,
-        5 engraving lines, 6 scribble, 7 woodcut, 8 none)
    paper / inkD (ink on light ground) / inkL (ink on dark ground), tint: how much of the scene's colour tints the paper,
-   wash: how far bright areas turn into paper, hk / lk / ok: strength of strokes / lines / outlines, sp: stroke spacing (m),
-   dark: the paper is dark (page text turns light) */
+   wash: how far bright areas turn into paper, lk / ok: strength of lines / outlines */
 export const ART = {
   current: { label: "A1 Plain (no drawing)", id: 0 },
-  sketch: { label: "A2 Architectural sketch (pen, construction lines, hatching)", id: 1, pat: 0, paper: "#F7F6F2", inkD: "#1E2024", inkL: "#ECEAE2", tint: 0.18, wash: 0.92, hk: 0.62, lk: 0.9, ok: 0.5, sp: 0.085 },
-  watercolor: { label: "A3 Watercolour over pencil", id: 2, pat: 0, paper: "#F9F7F0", inkD: "#5A5C62", inkL: "#E4E2DA", tint: 0.9, wash: 0.85, hk: 0.18, lk: 0.55, ok: 0.3, sp: 0.1 },
-  charcoal: { label: "A4 Charcoal", id: 3, pat: 2, paper: "#E8E3DA", inkD: "#151515", inkL: "#E8E3DA", tint: 0.06, wash: 0.9, hk: 0.75, lk: 0.85, ok: 0.65, sp: 0.22 },
-  ink: { label: "A6 Ink wash (sumi-e)", id: 5, pat: 8, paper: "#F3EDDF", inkD: "#121212", inkL: "#EDE6D6", tint: 0.08, wash: 0.92, hk: 0, lk: 0.85, ok: 0.75, sp: 0.1 },
-  marker: { label: "A7 Marker rendering", id: 6, pat: 4, paper: "#FBFAF7", inkD: "#141414", inkL: "#F0EEE8", tint: 1, wash: 0.9, hk: 0, lk: 0.95, ok: 0.7, sp: 0.32 },
-  pencil: { label: "A8 Coloured pencil", id: 7, pat: 3, paper: "#F9F7F0", inkD: "#4C4C54", inkL: "#E8E6DE", tint: 1, wash: 0.9, hk: 0, lk: 0.6, ok: 0.4, sp: 0.05 },
-  stipple: { label: "A9 Ink stipple (dots)", id: 8, pat: 1, paper: "#FAF9F5", inkD: "#111111", inkL: "#EEEEE8", tint: 0.08, wash: 0.94, hk: 0.85, lk: 0.85, ok: 0.5, sp: 0.045 },
-  sanguine: { label: "A10 Sanguine (red chalk)", id: 9, pat: 2, paper: "#EFE3CF", inkD: "#8A3A22", inkL: "#F4E6D0", tint: 0.1, wash: 0.9, hk: 0.7, lk: 0.8, ok: 0.55, sp: 0.2 },
-  toned: { label: "A12 Toned paper (graphite + white)", id: 11, pat: 0, paper: "#B9AA90", inkD: "#2A2420", inkL: "#F7F2E8", tint: 0.12, wash: 0.88, hk: 0.6, lk: 0.85, ok: 0.5, sp: 0.09 },
-  etching: { label: "A15 Etching (engraved lines)", id: 14, pat: 5, paper: "#EFE6D2", inkD: "#2B1D12", inkL: "#EFE6D2", tint: 0.06, wash: 0.93, hk: 0.95, lk: 0.9, ok: 0.55, sp: 0.03 },
-  urban: { label: "A16 Urban sketch (pen + loose colour)", id: 15, pat: 0, paper: "#FBFAF6", inkD: "#1A1A1A", inkL: "#EEECE6", tint: 0.2, wash: 0.92, hk: 0.35, lk: 1, ok: 0.6, sp: 0.1 },
-  sepia: { label: "A20 Sepia ink and wash", id: 19, pat: 0, paper: "#EADBC0", inkD: "#4A2E1A", inkL: "#F2E6CF", tint: 0.12, wash: 0.9, hk: 0.55, lk: 0.9, ok: 0.55, sp: 0.09 },
+  sketch: { label: "A2 Architectural sketch (pen, construction lines)", id: 1, paper: "#F7F6F2", inkD: "#1E2024", inkL: "#ECEAE2", tint: 0.18, wash: 0.92, lk: 0.9, ok: 0.5 },
+  watercolor: { label: "A3 Watercolour over pencil", id: 2, paper: "#F9F7F0", inkD: "#5A5C62", inkL: "#E4E2DA", tint: 0.9, wash: 0.85, lk: 0.55, ok: 0.3 },
+  charcoal: { label: "A4 Charcoal", id: 3, paper: "#E8E3DA", inkD: "#151515", inkL: "#E8E3DA", tint: 0.06, wash: 0.9, lk: 0.85, ok: 0.65 },
+  ink: { label: "A6 Ink wash (sumi-e)", id: 5, paper: "#F3EDDF", inkD: "#121212", inkL: "#EDE6D6", tint: 0.08, wash: 0.92, lk: 0.85, ok: 0.75 },
+  marker: { label: "A7 Marker rendering", id: 6, paper: "#FBFAF7", inkD: "#141414", inkL: "#F0EEE8", tint: 1, wash: 0.9, lk: 0.95, ok: 0.7 },
+  pencil: { label: "A8 Coloured pencil", id: 7, paper: "#F9F7F0", inkD: "#4C4C54", inkL: "#E8E6DE", tint: 1, wash: 0.9, lk: 0.6, ok: 0.4 },
+  stipple: { label: "A9 Ink stipple (dots)", id: 8, paper: "#FAF9F5", inkD: "#111111", inkL: "#EEEEE8", tint: 0.08, wash: 0.94, lk: 0.85, ok: 0.5 },
+  sanguine: { label: "A10 Sanguine (red chalk)", id: 9, paper: "#EFE3CF", inkD: "#8A3A22", inkL: "#F4E6D0", tint: 0.1, wash: 0.9, lk: 0.8, ok: 0.55 },
+  toned: { label: "A12 Toned paper (graphite + white)", id: 11, paper: "#B9AA90", inkD: "#2A2420", inkL: "#F7F2E8", tint: 0.12, wash: 0.88, lk: 0.85, ok: 0.5 },
+  etching: { label: "A15 Etching (engraved lines)", id: 14, paper: "#EFE6D2", inkD: "#2B1D12", inkL: "#EFE6D2", tint: 0.06, wash: 0.93, lk: 0.9, ok: 0.55 },
+  urban: { label: "A16 Urban sketch (pen + loose colour)", id: 15, paper: "#FBFAF6", inkD: "#1A1A1A", inkL: "#EEECE6", tint: 0.2, wash: 0.92, lk: 1, ok: 0.6 },
+  sepia: { label: "A20 Sepia ink and wash", id: 19, paper: "#EADBC0", inkD: "#4A2E1A", inkL: "#F2E6CF", tint: 0.12, wash: 0.9, lk: 0.9, ok: 0.55 },
 };
 
 /* ---------------- shared GLSL ---------------- */
@@ -44,18 +41,17 @@ float fbm(vec2 p) { float s = 0.0, a = 0.5; for (int i = 0; i < 4; i++) { s += a
 float lum(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }
 vec3 sat(vec3 c, float s) { return mix(vec3(lum(c)), c, s); }`;
 
-/* ---------------- pass B: drawn surfaces → (strokes, 0, shade, 1) ---------------- */
+/* ---------------- pass B: drawn surfaces → (0, 0, shade, opacity) ---------------- */
 const surfVert = /* glsl */ `
 #include <common>
 #include <logdepthbuf_pars_vertex>
-varying vec3 vW, vN; varying float vD;
+varying vec3 vN; varying float vD;
 void main() {
   #include <beginnormal_vertex>
   #include <defaultnormal_vertex>
   #include <begin_vertex>
   #include <project_vertex>
   #include <logdepthbuf_vertex>
-  vW = (modelMatrix * vec4(transformed, 1.0)).xyz;
   vN = normalize((vec4(transformedNormal, 0.0) * viewMatrix).xyz);
   vD = -mvPosition.z;
 }`;
@@ -63,26 +59,11 @@ void main() {
 const surfFrag = /* glsl */ `
 #include <common>
 #include <logdepthbuf_pars_fragment>
-uniform int uPat, uKind;            // kind: 0 lit surface, 1 flat colour, 2 sky, 3 glowing, 4 water
+uniform int uKind;                  // kind: 0 lit surface, 1 flat colour, 2 sky, 3 glowing, 4 water
 uniform vec3 uColor, uSun;
-uniform float uOpacity, uFog, uSp;
-varying vec3 vW, vN; varying float vD;
-${NOISE}
-// parallel strokes: t runs across them (1 = one spacing), 'along' along them (m); wpx = width in px
-float strokes(float t, float along, float wpx, float brk, float waver) {
-  t += waver * (noise(vec2(along * 0.7, floor(t) * 3.1)) - 0.5);
-  float fw = max(fwidth(t), 1e-4), d = abs(fract(t + 0.5) - 0.5);
-  float l = 1.0 - smoothstep(max(0.5 * wpx - 0.5, 0.0) * fw, (0.5 * wpx + 0.5) * fw, d);
-  l *= smoothstep(brk - 0.06, brk + 0.06, noise(vec2(along * 0.9 + floor(t) * 7.3, floor(t) * 1.7)));
-  return mix(l, min(1.0, fw * wpx * 1.1), smoothstep(0.18, 0.4, fw));       // too dense to draw: a tone
-}
-// strokes whose width is a fraction of the spacing (engraving, woodcut): fatter where darker
-float bands(float t, float along, float frac, float waver) {
-  t += waver * (noise(vec2(along * 0.5, floor(t) * 3.1)) - 0.5);
-  float fw = max(fwidth(t), 1e-4), d = abs(fract(t + 0.5) - 0.5);
-  float l = 1.0 - smoothstep(0.5 * frac - fw, 0.5 * frac + fw, d);
-  return mix(l, frac, smoothstep(0.25, 0.5, fw));
-}
+uniform float uOpacity, uFog;
+varying vec3 vN; varying float vD;
+float lum(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }
 void main() {
   #include <logdepthbuf_fragment>
   vec3 N = normalize(vN); if (!gl_FrontFacing) N = -N;
@@ -96,36 +77,7 @@ void main() {
   } else if (uKind == 1) s = 0.3 * (1.0 - lum(pow(uColor, vec3(1.0 / 2.2))));
   s = clamp(s, 0.0, 1.0) * (1.0 - fog);
 
-  float u, v;                                                                // coordinates on the surface
-  if (abs(N.y) < 0.6) { vec3 tg = normalize(vec3(-N.z, 0.0, N.x) + 1e-5); u = dot(vW, tg); v = vW.y; }
-  else { u = vW.x; v = vW.z; }
-  float sp = uSp, R = 0.0;
-  if (uPat == 0) {
-    float h1 = strokes(u / sp, v, 1.3, 0.22, 0.18), h2 = strokes((u + v) / (sp * 1.3), v - u, 1.2, 0.28, 0.18), h3 = strokes(v / (sp * 0.7), u, 1.2, 0.3, 0.18);
-    R = max(h1 * smoothstep(0.16, 0.3, s), max(h2 * smoothstep(0.6, 0.72, s), h3 * smoothstep(0.8, 0.92, s)));
-  } else if (uPat == 1) {                    // stipple: jittered dots, more of them where darker
-    vec2 q = vec2(u, v) / sp, id = floor(q), f = fract(q) - 0.5 - (vec2(hash(id), hash(id + 7.7)) - 0.5) * 0.6;
-    float fw = max(fwidth(q.x), 1e-4), r = 0.9 * fw + 0.04;
-    float dot1 = (1.0 - smoothstep(r - fw, r + fw, length(f))) * step(hash(id + 3.1), s * 1.5);
-    R = mix(dot1, s * 0.6, smoothstep(0.25, 0.5, fw));
-  } else if (uPat == 2) {                    // broad chalk/charcoal strokes on the tooth of the paper
-    float br = strokes(u / sp, v, 3.0, 0.1, 0.25) * 0.5 + 0.5 * noise(vec2(u * 2.0, v * 9.0));
-    R = smoothstep(0.15, 0.95, s * 1.15 + 0.35 * (br - 0.5));
-  } else if (uPat == 3) {                    // pencil strokes (the last pass decides how much colour they carry)
-    R = clamp(strokes(u / sp, v, 1.6, 0.15, 0.2) + strokes((u - v) / (sp * 1.2), u + v, 1.4, 0.2, 0.2) * smoothstep(0.35, 0.6, s), 0.0, 1.0);
-  } else if (uPat == 4) {                    // marker streaks where strokes overlap
-    R = smoothstep(0.86, 1.0, fract(u / sp + 0.3 * noise(vec2(v * 0.4, 0.0))));
-  } else if (uPat == 5) {                    // engraving: fine lines, fatter in shade, crossed in deep shade
-    R = max(bands(u / sp, v, 0.06 + 0.55 * s, 0.12), bands((u + v) / (sp * 1.2), v - u, 0.5 * smoothstep(0.55, 0.9, s), 0.12));
-  } else if (uPat == 6) {                    // ballpoint scribble
-    float a = strokes((u * 0.8 + v * 0.6) / sp, v - u, 1.2, 0.12, 0.9), b = strokes((u * 0.6 - v * 0.8) / (sp * 1.1), u + v, 1.2, 0.18, 0.9);
-    R = max(a * smoothstep(0.14, 0.3, s), b * smoothstep(0.45, 0.62, s));
-  } else if (uPat == 7) {                    // woodcut: carved bands
-    R = max(bands(u / sp, v, 0.08 + 0.85 * s, 0.35), step(0.8, s));
-  }
-  if (uKind == 4) R = max(R, strokes(vW.z / 3.2, vW.x * 0.25, 1.4, 0.7, 0.18) * 0.7 * (1.0 - fog));   // loose strokes on water
-  if (uKind == 2 || uKind == 3) R = 0.0;
-  gl_FragColor = vec4(R * (1.0 - fog), 0.0, s, uOpacity);
+  gl_FragColor = vec4(0.0, 0.0, s, uOpacity);
 }`;
 
 /* ---------------- pass B: drawn lines → (0, 1, 0, alpha) ---------------- */
@@ -175,7 +127,7 @@ uniform sampler2D tA, tB, tDepth;
 uniform vec2 uRes; uniform float uScale, uLogF, uFog, uExposure;
 uniform int uStyle;
 uniform vec3 uPaper, uInkD, uInkL;
-uniform float uTint, uWash, uHK, uLK, uOK, uDay, uHatch;   // uHatch: 1 strokes on surfaces, 0 none   // uDay: daylight of the whole scene (0 night … 1 day)
+uniform float uTint, uWash, uLK, uOK, uDay;   // uDay: daylight of the whole scene (0 night … 1 day)
 varying vec2 vUv;
 ${NOISE}
 vec3 RRTAndODTFit(vec3 v) { vec3 a = v * (v + 0.0245786) - 0.000090537; vec3 b = v * (0.983729 * v + 0.4329510) + 0.238081; return a / b; }
@@ -196,12 +148,6 @@ float edge(vec2 uv, float r) {
 }
 vec3 hue(vec3 c) { return clamp(c / max(lum(c), 0.06), 0.0, 2.5); }
 vec3 posterise(vec3 c, float n) { return floor(c * n + 0.5) / n; }
-// a halftone dot screen: 1 = ink
-float halftone(vec2 p, float amt, float ang, float cell) {
-  vec2 r = mat2(cos(ang), -sin(ang), sin(ang), cos(ang)) * p / cell;
-  float d = length(fract(r) - 0.5), rad = sqrt(clamp(amt, 0.0, 1.0)) * 0.62;
-  return 1.0 - smoothstep(rad - 0.08, rad + 0.08, d);
-}
 
 void main() {
   vec2 uv = vUv, p = gl_FragCoord.xy / uScale;
@@ -210,7 +156,7 @@ void main() {
   if (B.b > B.a + 0.5) { gl_FragColor = vec4(srgb(clamp(texture2D(tA, uv).rgb, 0.0, 1.0)), 1.0); return; }  // a wall board
   float mask = clamp(B.a, 0.0, 1.0);
   if (mask < 0.003) { gl_FragColor = vec4(a, 1.0); return; }                                           // not drawn (house only)
-  float R = clamp(B.r / mask, 0.0, 1.0) * uHatch + ((uStyle == 7 || uStyle == 18) ? 0.5 * (1.0 - uHatch) : 0.0), G = clamp(B.g / mask, 0.0, 1.0), s = clamp(B.b / mask, 0.0, 1.0);
+  float G = clamp(B.g / mask, 0.0, 1.0), s = clamp(B.b / mask, 0.0, 1.0);   // G: drawn lines, s: shade
 
   // brightness of the neighbourhood (so small bright things — stars, lit windows — keep their own look)
   float Lb = 0.0;
@@ -218,9 +164,9 @@ void main() {
   Lb = mix(Lb / 6.0, lum(a), 0.3);
   float day = max(smoothstep(0.12, 0.55, Lb), uDay * smoothstep(0.03, 0.22, Lb));   // in daylight shade becomes paper too
   float z0 = iz(uv), dist = z0 > 0.0 ? 1.0 / z0 : 1e4, near = exp(-uFog * uFog * dist * dist);
-  float grain = fbm(p * 0.45), tooth = noise(p * 0.9);
+  float grain = fbm(p * 0.45);
   vec2 wob = (vec2(noise(p * 0.015), noise(p * 0.015 + 31.7)) - 0.5) * 2.6;
-  float e = edge(px2uv(p + wob), (uStyle == 3 || uStyle == 5 || uStyle == 17) ? 1.6 : 1.0) * near;
+  float e = edge(px2uv(p + wob), (uStyle == 3 || uStyle == 5) ? 1.6 : 1.0) * near;
 
   vec3 src = a;
   if (uStyle == 3 || uStyle == 9) {                                    // chalks: smudged
@@ -250,49 +196,25 @@ void main() {
     float q = clamp(floor(max(s * 0.9, 1.0 - Ls) * 3.0 + 0.3 + 0.5 * (fbm(p * 0.04) - 0.5)) / 3.0, 0.0, 1.0);
     base = mix(src, uPaper * (1.0 - 0.7 * q) * (0.96 + 0.05 * noise(p * vec2(0.08, 0.6))), uWash * day);
   } else if (uStyle == 6) {                // marker: flat bold colour, streaks, white highlights
-    vec3 m = mix(posterise(sat(src, 1.35), 5.0), sat(src, 1.35), 0.5) * (1.0 - 0.1 * R) * (1.0 - 0.25 * s);
+    vec3 m = mix(posterise(sat(src, 1.35), 5.0), sat(src, 1.35), 0.5) * (1.0 - 0.25 * s);
     m = mix(m, uPaper, smoothstep(0.82, 0.92, Ls + 0.06 * (noise(p * 0.05) - 0.5)));
     base = mix(src, m, day);
-  } else if (uStyle == 7 || uStyle == 18) { // coloured pencil / pastel: colour carried by strokes on the tooth
+  } else if (uStyle == 7) {                // coloured pencil: colour carried by strokes on the tooth
     float amt = clamp((1.0 - Ls) * 1.2 + chroma * 0.8 + 0.1, 0.0, 1.0);
-    float cover = uStyle == 7
-      ? clamp(R * smoothstep(0.05, 0.5, amt) + 0.55 * smoothstep(0.7, 1.0, amt), 0.0, 1.0)
-      : smoothstep(tooth - 0.3, tooth + 0.2, amt * 0.9 + 0.25 * R);
-    vec3 pig = uStyle == 7 ? sat(src, 1.35) : sat(src, 0.85) * 1.12 + 0.06;
-    base = mix(src, mix(uPaper, pig, cover * 0.92), day);
-  } else if (uStyle == 12) {               // gouache: flat opaque planes, brush texture
-    vec3 g = posterise(sat(src, 1.2), 4.0) * (0.95 + 0.08 * fbm(p * vec2(0.05, 0.2)));
-    base = mix(src, mix(g, uPaper, 0.12), 0.9 * day);
-  } else if (uStyle == 16) {               // risograph: pink + blue inks in halftone, slightly off-register
-    float t = 1.0 - Ls, warm = clamp(src.r - src.b + 0.5, 0.0, 1.0);
-    float pink = halftone(p + vec2(1.5, -1.0), t * (0.35 + 0.65 * warm), 0.26, 5.0);
-    float blue = halftone(p, t * (1.0 - 0.6 * warm) + 0.15 * s, 1.31, 5.0);
-    base = uPaper * mix(vec3(1.0), vec3(1.0, 0.28, 0.69), pink * 0.9) * mix(vec3(1.0), vec3(0.0, 0.47, 0.75), blue * 0.9);
-    base = mix(src, base, 0.35 + 0.65 * smoothstep(0.03, 0.2, Lb));     // the darkest night keeps its own look
-  } else if (uStyle == 17) {               // woodcut: black and white only
-    float dk = max(R, 1.0 - smoothstep(0.3, 0.42, Ls + 0.08 * (noise(p * 0.2) - 0.5)));
-    base = mix(uPaper, uInkD, step(0.5, dk));
-    base = mix(base, src, 0.25 * (1.0 - day));
+    float cover = clamp(0.5 * smoothstep(0.05, 0.5, amt) + 0.55 * smoothstep(0.7, 1.0, amt), 0.0, 1.0);
+    base = mix(src, mix(uPaper, sat(src, 1.35), cover * 0.92), day);
   } else if (uStyle == 11) {               // toned paper: white chalk on the lit faces
     float hl = smoothstep(0.7, 0.92, Ls) * (1.0 - s) * smoothstep(0.3, 0.7, noise(p * vec2(0.6, 0.08)));
     base = mix(base, uInkL, hl * 0.6 * day);
   } else if (uStyle == 19 || uStyle == 14) { // sepia / etching: aged sheet, darker towards the edges
     float vig = smoothstep(0.45, 1.0, length((uv - 0.5) * vec2(1.1, 1.0)));
     base *= 1.0 - (0.18 * vig + 0.06 * fbm(p * 0.008)) * day;
-  } else if (uStyle == 10) {               // chalk dust on the board
-    base += 0.035 * fbm(p * 0.02) * day;
   }
 
   vec3 ink = mix(uInkL, uInkD, smoothstep(0.28, 0.5, lum(base)));
-  if (uStyle == 4 || uStyle == 10) ink = uInkD;
-  o = mix(base, ink, clamp(R * uHK * mix(0.35, 1.0, day), 0.0, 1.0));
-  o = mix(o, ink, clamp(G * uLK, 0.0, 1.0));
+  o = mix(base, ink, clamp(G * uLK, 0.0, 1.0));                     // drawn lines
   float br = (uStyle == 5) ? smoothstep(0.25, 0.45, noise(p * vec2(0.25, 0.05)) + 0.3) : 1.0;   // dry brush
   o = mix(o, ink, clamp(e * uOK * br, 0.0, 1.0));
-  if (uStyle == 4) {                       // blueprint grid
-    vec2 gp = abs(fract(p / 24.0) - 0.5) * 24.0;
-    o += (1.0 - smoothstep(0.0, 0.9, min(gp.x, gp.y))) * 0.07 * day;
-  }
   o *= mix(1.0, 0.975 + 0.04 * grain, day);                          // paper tooth
   gl_FragColor = vec4(mix(a, o, mask), 1.0);
 }`;
@@ -328,7 +250,7 @@ function pickTargets(renderer) {
 
 export function createArtPass(renderer, scene, camera) {
   let style = 0, S = null;
-  const U = { uPat: { value: 0 }, uSun: { value: new THREE.Vector3(-4, 12, 6).normalize() }, uFog: { value: 0 }, uSp: { value: 0.085 } };
+  const U = { uSun: { value: new THREE.Vector3(-4, 12, 6).normalize() }, uFog: { value: 0 } };
 
   const surfCache = new WeakMap();
   function surface(orig) {
@@ -434,7 +356,7 @@ export function createArtPass(renderer, scene, camera) {
       tA: { value: rtA.texture }, tB: { value: rtB.texture }, tDepth: { value: depthTexture }, uRes: { value: new THREE.Vector2(1, 1) },
       uScale: { value: 1 }, uLogF: { value: 1 }, uFog: U.uFog, uExposure: { value: 1 }, uStyle: { value: 0 },
       uPaper: { value: new THREE.Vector3() }, uInkD: { value: new THREE.Vector3() }, uInkL: { value: new THREE.Vector3() },
-      uTint: { value: 0 }, uWash: { value: 0 }, uDay: { value: 1 }, uHatch: { value: 1 }, uHK: { value: 0 }, uLK: { value: 0 }, uOK: { value: 0 },
+      uTint: { value: 0 }, uWash: { value: 0 }, uDay: { value: 1 }, uLK: { value: 0 }, uOK: { value: 0 },
     },
   });
   const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), post);
@@ -445,18 +367,16 @@ export function createArtPass(renderer, scene, camera) {
 
   return {
     get on() { return style !== 0; },
-    setHatching(on) { post.uniforms.uHatch.value = on ? 1 : 0; },   // without: lines, paper and colour only
     setStyle(key) {
       S = ART[key] && ART[key].id ? ART[key] : null;
       style = S ? S.id : 0;
       if (!S) return;
       const u = post.uniforms;
       u.uStyle.value = style; u.uPaper.value.copy(srgb3(S.paper)); u.uInkD.value.copy(srgb3(S.inkD)); u.uInkL.value.copy(srgb3(S.inkL));
-      u.uTint.value = S.tint; u.uWash.value = S.wash; u.uHK.value = S.hk; u.uLK.value = S.lk; u.uOK.value = S.ok;
-      U.uPat.value = S.pat; U.uSp.value = S.sp;
+      u.uTint.value = S.tint; u.uWash.value = S.wash; u.uLK.value = S.lk; u.uOK.value = S.ok;
     },
     // build/refresh the drawn copies (layer 2). Call after every rebuild or option change.
-    apply(world, { bounds, sun, houseOnly = false } = {}) {
+    apply(world, { bounds, sun } = {}) {
       if (sun) U.uSun.value.copy(sun).normalize();
       if (!style) return;
       const visit = (o, house) => {
@@ -465,12 +385,12 @@ export function createArtPass(renderer, scene, camera) {
         if (o.userData.keep) cloneOf(o, () => new THREE.Mesh(o.geometry, markMat));
         else if (o.isMesh) {
           const c = cloneOf(o, () => new THREE.Mesh(o.geometry));
-          const env = houseOnly && !house;
+          const env = !house;                                  // the surroundings: depth only
           c.visible = !(env && o.material?.userData?.artKind === "sky");
           c.material = env ? hideMat : Array.isArray(o.material) ? o.material.map(surface) : surface(o.material);
         } else if (o.isLineSegments && (o.geometry.type === "EdgesGeometry" || o.userData.edges)) {   // merged outlines are flagged
           const c = cloneOf(o, () => new THREE.LineSegments(handLines(o), inkMat));
-          c.visible = !houseOnly || house;
+          c.visible = house;
         }
         for (const ch of [...o.children]) visit(ch, house);
       };

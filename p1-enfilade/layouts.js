@@ -5,46 +5,17 @@
 
 const UP = 3.6, H = 3.4, SHORE = 12;
 
-/* ---------------- house shapes ---------------- */
-export const SHAPES = {
-  L: {
-    label: "H1 L-shaped",
-    floors: [
-      { living: [-9, -8, -3, 0], hall: [-3, -6, 1, 0], stair: [1, -6, 4, 0], kitchen: [-3, -12, 4, -6] },
-      { bedroom: [-9, -8, -3, 0], gallery: [-3, -6, 1, 0], stair: [1, -6, 4, 0], study: [-3, -12, 4, -6], reading: [-9, -14, -3, -8] },
-    ],
-    doors: [[0, "hall", "living"], [0, "hall", "kitchen"], [0, "hall", "stair", [1, -0.8]],
-      [1, "gallery", "stair", [1, -0.8]], [1, "gallery", "bedroom"], [1, "gallery", "study", [-1, -6]], [1, "bedroom", "reading", [-6, -8]]],
-    entrance: [-1, 0],
-    stops: [["living", "w"], ["kitchen", "n"], ["bedroom", "w"], ["study", "n"], ["reading", "w"]],
-    exit: ["reading", "n", [-6, -14]],
-  },
-  stack: {
-    label: "H2 Stacked boxes",
-    floors: [
-      { living: [-8, -8, -2, 0], hall: [-2, -8, 1, 0], stair: [1, -6, 4, 0], kitchen: [4, -8, 10, 0] },
-      { bedroom: [-8, -6, -2, 0], gallery: [-2, -6, 1, 0], stair: [1, -6, 4, 0], study: [-8, -14, -1, -6], reading: [-1, -14, 6, -6] },
-    ],
-    doors: [[0, "hall", "living", [-2, -4]], [0, "hall", "stair", [1, -0.8]], [0, "stair", "kitchen", [4, -0.8]],
-      [1, "gallery", "stair", [1, -0.8]], [1, "gallery", "bedroom"], [1, "gallery", "reading", [0, -6]], [1, "study", "reading", [-1, -10]]],
-    entrance: [-0.5, 0],
-    stops: [["living", "w"], ["kitchen", "e"], ["bedroom", "w"], ["study", "n"], ["reading", "e"]],
-    exit: ["reading", "n", [2.5, -14]],
-  },
-  court: {
-    label: "H3 Around a courtyard deck",
-    floors: [
-      { living: [-10, -10, -4, 0], hall: [-4, -5, 0, 0], stair: [0, -6, 3, 0], kitchen: [3, -10, 9, 0] },
-      { bedroom: [-10, -10, -4, 0], gallery: [-4, -5, 0, 0], stair: [0, -6, 3, 0], study: [3, -10, 9, 0], reading: [-10, -16, 9, -10] },
-    ],
-    doors: [[0, "hall", "living", [-4, -2.5]], [0, "hall", "stair", [0, -0.8]], [0, "stair", "kitchen", [3, -0.8]],
-      [1, "gallery", "stair", [0, -0.8]], [1, "gallery", "bedroom", [-4, -2.5]], [1, "stair", "study", [3, -0.8]],
-      [1, "bedroom", "reading", [-7, -10]], [1, "study", "reading", [6, -10]]],
-    entrance: [-2, 0],
-    deck: [-4, -10, 3, -5],
-    stops: [["living", "w"], ["kitchen", "e"], ["bedroom", "w"], ["study", "e"], ["reading", "n"]],
-    exit: ["reading", "w", [-10, -13]],
-  },
+/* ---------------- the plan (H2 stacked boxes; the L-shaped and courtyard plans are in git history) ---------------- */
+const PLAN = {
+  floors: [
+    { living: [-8, -8, -2, 0], hall: [-2, -8, 1, 0], stair: [1, -6, 4, 0], kitchen: [4, -8, 10, 0] },
+    { bedroom: [-8, -6, -2, 0], gallery: [-2, -6, 1, 0], stair: [1, -6, 4, 0], study: [-8, -14, -1, -6], reading: [-1, -14, 6, -6] },
+  ],
+  doors: [[0, "hall", "living", [-2, -4]], [0, "hall", "stair", [1, -0.8]], [0, "stair", "kitchen", [4, -0.8]],
+    [1, "gallery", "stair", [1, -0.8]], [1, "gallery", "bedroom"], [1, "gallery", "reading", [0, -6]], [1, "study", "reading", [-1, -10]]],
+  entrance: [-0.5, 0],
+  stops: [["living", "w"], ["kitchen", "e"], ["bedroom", "w"], ["study", "n"], ["reading", "e"]],
+  exit: ["reading", "n", [2.5, -14]],
 };
 
 const SIDE_N = { w: [1, 0], e: [-1, 0], n: [0, 1], s: [0, -1] };   // inward normal of each side
@@ -80,8 +51,8 @@ function floorWalls(rooms) {
 }
 
 /* ---------------- build one shape into a layout the engine can walk ---------------- */
-export function lakeHouse(key, level = 0) {
-  const S = SHAPES[key];
+export function lakeHouse() {
+  const S = PLAN;
   const R = (f, name) => S.floors[f][name];
   const stopRooms = Object.fromEntries(S.stops.map(([room, side]) => [room, side]));
   const sr = R(0, "stair"), [sx0, sz0, sx1, sz1] = sr;
@@ -164,24 +135,23 @@ export function lakeHouse(key, level = 0) {
     h.slab(sx0, sz0, sx1, sz1 - 4.4, half, { th: 0.15 });
     h.flight([laneB, sz1 - 4.4], [laneB, sz1 - 1.6], half, UP, 1.2, 10);
     h.rail([[sx0, UP + 0.9, sz1 - 1.6], [sx1, UP + 0.9, sz1 - 1.6]]);
-    if (S.deck) h.slab(S.deck[0], S.deck[1], S.deck[2], S.deck[3], 0, { th: 0.2 });
     // stilts under the ground floor
     for (const r of Object.values(S.floors[0])) for (let x = r[0]; x <= r[2]; x += Math.max(2, (r[2] - r[0]) / 2)) for (const z of [r[1], r[3]]) h.post(x, z, -2.2, -0.3);
     // boardwalk to the shore
     h.boardwalk(ex0 - 1.2, ez, ex0 + 1.2, SHORE + 3);
-    h.boat(ex0 + 3, ez + 5, 0);
+    h.boat(ex0 + 3, ez + 5);
     // furniture against the wall opposite each board (and a little in the hall)
     for (const f of [0, 1]) for (const [name, r] of Object.entries(S.floors[f])) {
       const side = stopRooms[name] && roomFloor(name) === f ? opposite[stopRooms[name]] : null;
       const dps = doors.filter((d) => d.f === f && (d.r1 === name || d.r2 === name)).map((d) => d.p);
       if (name === ex[0] && f === 1) dps.push(exitP);
-      if (side) furnish(h, name, r, side, f * UP, dps, level);
-      else if (name === "hall" || name === "gallery") { h.furn("plant", r[0] + 0.5, f * UP, r[1] + 0.5); if (level) hallExtras(h, r, f * UP, dps, level); }
+      if (side) furnish(h, name, r, side, f * UP, dps);
+      else if (name === "hall" || name === "gallery") { h.furn("plant", r[0] + 0.5, f * UP, r[1] + 0.5); hallExtras(h, r, f * UP, dps); }
     }
   }
 
   return {
-    label: S.label, outdoor: true, noGround: true, build,
+    build,
     start: [ex0, 0, SHORE + 7], stops,
     exit: { sill: [exitP[0] + exN[0] * 0.4, UP, exitP[1] + exN[1] * 0.4], dir: [-exN[0], -exN[1]], via: exitVia },
     bounds, shore: SHORE, dock: ex0,
@@ -211,15 +181,15 @@ function wallPlacer(h, r, y, doorPts, backSide) {
 }
 const sidesOf = (back) => (back === "w" || back === "e" ? ["n", "s"] : ["w", "e"]);
 
-function hallExtras(h, r, y, doorPts, level) {
+function hallExtras(h, r, y, doorPts) {
   const put = wallPlacer(h, r, y, doorPts, null);
   for (const sd of ["w", "e", "n", "s"]) if (put(sd, "frame", 0, 0.03, 1.2, 0, null)) break;
-  if (level >= 2) { put("e", "bench", 0.8, 0.3, 1.7) || put("w", "bench", 0.8, 0.3, 1.7); put("n", "basket", 1.2, 0.35, 0.6); }
-  if (level >= 3) { put("s", "tallplant", 1.4, 0.45, 0.8) || put("n", "tallplant", -1.4, 0.45, 0.8); put("w", "rug", 0, 1.3, 1, 0, [2.4, 1.4]); }
+  put("e", "bench", 0.8, 0.3, 1.7) || put("w", "bench", 0.8, 0.3, 1.7); put("n", "basket", 1.2, 0.35, 0.6);
+  put("s", "tallplant", 1.4, 0.45, 0.8) || put("n", "tallplant", -1.4, 0.45, 0.8); put("w", "rug", 0, 1.3, 1, 0, [2.4, 1.4]);
 }
 
-/* furniture along one wall, kept clear of doors and out of the reading view */
-function furnish(h, type, r, side, y, doorPts, level = 0) {
+/* furniture along one wall, kept clear of doors and out of the reading view, then more around the room (P4: the fullest) */
+function furnish(h, type, r, side, y, doorPts) {
   const L = sideLine(r, side), n = L.n, len = Math.hypot(L.b[0] - L.a[0], L.b[1] - L.a[1]);
   const t = [(L.b[0] - L.a[0]) / len, (L.b[1] - L.a[1]) / len], mid = [(L.a[0] + L.b[0]) / 2, (L.a[1] + L.b[1]) / 2];
   const roomDepth = side === "w" || side === "e" ? r[2] - r[0] : r[3] - r[1];
@@ -251,8 +221,7 @@ function furnish(h, type, r, side, y, doorPts, level = 0) {
     const s = first([-1.1, 0, 1.1, -2.2], (s) => put("shelf", s, 0.2, 2.0));
     if (s !== null) { put("shelf", s + 2.15, 0.2, 2.0); put("armchair", s - 2.0, 0.9, 0.9, 0.5); put("lamp", s - 2.9, 0.35, 0.4); }
   }
-  if (!level) return;
-  // more life in the room, level by level: side walls (back half), corners, ceiling
+  // more life in the room: side walls (back half), corners, ceiling
   const P = wallPlacer(h, r, y, doorPts, side), [sa, sb] = sidesOf(side);
   const both = (fn) => fn(sa) || fn(sb);
   const cx = (r[0] + r[2]) / 2, cz = (r[1] + r[3]) / 2;
@@ -262,32 +231,32 @@ function furnish(h, type, r, side, y, doorPts, level = 0) {
     P(sa, "frame", 1.6, 0.03, 1.1); P(sb, "frame", 1.4, 0.03, 0.9);
     both((sd) => P(sd, "tallplant", 0.5, 0.5, 0.8));
     both((sd) => P(sd, "armchair", 3.2, 0.7, 0.9));
-    if (level >= 2) { pend(); put("sidetable", 1.5, 0.45, 0.5); put("cushions", 0, 0.55, 0.1); put("basket", -2.3, 0.4, 0.5); P(sb, "vase", 0.5, 0.35, 0.4); }
-    if (level >= 3) { both((sd) => P(sd, "shelf", 3.6, 0.2, 2.0)); P(sa, "plant", 3.3, 0.45, 0.6); P(sb, "plant", 3.3, 0.45, 0.6); put("rug", 0, 2.5, 1, 0, [1.8, 1.2]); }
+    pend(); put("sidetable", 1.5, 0.45, 0.5); put("cushions", 0, 0.55, 0.1); put("basket", -2.3, 0.4, 0.5); P(sb, "vase", 0.5, 0.35, 0.4);
+    both((sd) => P(sd, "shelf", 3.6, 0.2, 2.0)); P(sa, "plant", 3.3, 0.45, 0.6); P(sb, "plant", 3.3, 0.45, 0.6); put("rug", 0, 2.5, 1, 0, [1.8, 1.2]);
   } else if (type === "kitchen") {
     for (const k of [-0.6, 0.2, 1.0]) put("stool", (first([-1.2, 0, 1.2, -2], () => true) ?? 0) + k, 1.05, 0.4);
     P(sa, "frame", 1.6, 0.03, 1.0);
     both((sd) => P(sd, "tallplant", 0.5, 0.5, 0.8));
-    if (level >= 2) { pend(); both((sd) => P(sd, "sideboard", 2.2, 0.3, 1.9)); P(sb, "basket", 0.6, 0.4, 0.5); P(sb, "frame", 1.8, 0.03, 0.8); }
-    if (level >= 3) { both((sd) => P(sd, "shelf", 3.8, 0.2, 2.0)); P(sa, "plant", 3.4, 0.45, 0.6); P(sb, "vase", 3.0, 0.35, 0.4); }
+    pend(); both((sd) => P(sd, "sideboard", 2.2, 0.3, 1.9)); P(sb, "basket", 0.6, 0.4, 0.5); P(sb, "frame", 1.8, 0.03, 0.8);
+    both((sd) => P(sd, "shelf", 3.8, 0.2, 2.0)); P(sa, "plant", 3.4, 0.45, 0.6); P(sb, "vase", 3.0, 0.35, 0.4);
   } else if (type === "bedroom") {
     P(sa, "frame", 1.4, 0.03, 1.2); both((sd) => P(sd, "tallplant", 0.5, 0.5, 0.8)); both((sd) => P(sd, "armchair", 2.4, 0.6, 0.9));
-    if (level >= 2) { pend(); put("sidetable", -2.9, 0.35, 0.5); P(sb, "basket", 0.7, 0.4, 0.5); P(sb, "frame", 1.6, 0.03, 0.9); }
-    if (level >= 3) { both((sd) => P(sd, "shelf", 3.4, 0.2, 2.0)); P(sa, "plant", 3.2, 0.45, 0.6); put("bench", 0, 2.3, 1.7) || P(sb, "bench", 2.8, 0.3, 1.7); }
+    pend(); put("sidetable", -2.9, 0.35, 0.5); P(sb, "basket", 0.7, 0.4, 0.5); P(sb, "frame", 1.6, 0.03, 0.9);
+    both((sd) => P(sd, "shelf", 3.4, 0.2, 2.0)); P(sa, "plant", 3.2, 0.45, 0.6); put("bench", 0, 2.3, 1.7) || P(sb, "bench", 2.8, 0.3, 1.7);
   } else if (type === "study") {
     both((sd) => P(sd, "shelf", 1.2, 0.2, 2.0)); P(sb, "frame", 1.6, 0.03, 1.0); both((sd) => P(sd, "tallplant", 0.5, 0.5, 0.8));
-    if (level >= 2) { pend(); both((sd) => P(sd, "armchair", 2.8, 0.7, 0.9)); put("basket", 2.6, 0.4, 0.5); P(sa, "sidetable", 2.9, 0.4, 0.5); }
-    if (level >= 3) { both((sd) => P(sd, "shelf", 3.4, 0.2, 2.0)); P(sa, "plant", 3.6, 0.45, 0.6); put("rug", 0, 1.6, 1, 0, [2.2, 1.6]); }
+    pend(); both((sd) => P(sd, "armchair", 2.8, 0.7, 0.9)); put("basket", 2.6, 0.4, 0.5); P(sa, "sidetable", 2.9, 0.4, 0.5);
+    both((sd) => P(sd, "shelf", 3.4, 0.2, 2.0)); P(sa, "plant", 3.6, 0.45, 0.6); put("rug", 0, 1.6, 1, 0, [2.2, 1.6]);
   } else if (type === "reading") {
     both((sd) => P(sd, "tallplant", 0.5, 0.5, 0.8)); P(sa, "frame", 1.6, 0.03, 1.1); put("sidetable", -3.0, 0.9, 0.5);
-    if (level >= 2) { pend(); put("rug", -1, 1.5, 1, 0, [2.6, 1.8]); both((sd) => P(sd, "armchair", 2.2, 0.7, 0.9)); P(sb, "basket", 0.7, 0.4, 0.5); }
-    if (level >= 3) { both((sd) => P(sd, "shelf", 3.2, 0.2, 2.0)); P(sb, "shelf", 3.2, 0.2, 2.0); P(sa, "plant", 3.4, 0.45, 0.6); P(sb, "vase", 1.6, 0.35, 0.4); }
+    pend(); put("rug", -1, 1.5, 1, 0, [2.6, 1.8]); both((sd) => P(sd, "armchair", 2.2, 0.7, 0.9)); P(sb, "basket", 0.7, 0.4, 0.5);
+    both((sd) => P(sd, "shelf", 3.2, 0.2, 2.0)); P(sb, "shelf", 3.2, 0.2, 2.0); P(sa, "plant", 3.4, 0.45, 0.6); P(sb, "vase", 1.6, 0.35, 0.4);
   }
   // fuller rooms: a small seating corner in the back half, and plants flanking the board
   const depth = roomDepth;
-  if (level >= 2 && depth >= 7.5) for (const sg of [1, -1]) {
+  if (depth >= 7.5) for (const sg of [1, -1]) {
     const a = sg * len / 3;
     if (put("rug", a, 1.75, 1.0, 0, [1.7, 1.4])) { put("armchair", a - sg * 0.35, 1.95, 0.9, Math.PI * 0.85); put("sidetable", a + sg * 0.55, 1.6, 0.5); break; }
   }
-  if (level >= 3) { P(sa, "basket", 1.1, 0.35, 0.5); P(sb, "vase", 1.1, 0.35, 0.4); }
+  P(sa, "basket", 1.1, 0.35, 0.5); P(sb, "vase", 1.1, 0.35, 0.4);
 }
